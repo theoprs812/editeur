@@ -20,10 +20,10 @@
     "arrondi": 0.22
   },
   "sous_titres": {
-    "taille": 80,
+    "taille": 72,
     "couleur": "#FFFFFF",
     "couleur_mot": null,
-    "contour": 6,
+    "contour": 0,
     "couleur_contour": "#000000",
     "ombre": 0,
     "y": 1330,
