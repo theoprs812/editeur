@@ -12,6 +12,8 @@
 set -euo pipefail
 
 RACINE="$(cd "$(dirname "$0")/.." && pwd)"
+CODE=""
+[[ "${1:-}" == "--code" ]] && CODE="${2:-}"   # code d'accès à la banque de musiques (dans le message d'installation du tuto)
 ELEVE="${EDITEUR_DOSSIER:-$HOME/Editeur}"
 MODELES="$HOME/Library/Application Support/whisper.cpp/models"
 MODELE="ggml-large-v3-turbo-q5_0.bin"
@@ -60,8 +62,6 @@ if a yt-dlp; then ok "yt-dlp"; brew upgrade yt-dlp >/dev/null 2>&1 || true; else
 
 # Pillow : dessine le texte du début façon Instagram (coins arrondis)
 python3 -c "import PIL" 2>/dev/null && ok "Pillow" || { python3 -m pip install --user --quiet pillow 2>/dev/null || brew install pillow; ok "Pillow"; }
-# gdown : la banque de musiques (dossier Google Drive partagé)
-python3 -c "import gdown" 2>/dev/null && ok "gdown" || { python3 -m pip install --user --quiet gdown 2>/dev/null && ok "gdown"; }
 # pycapcut : envoyer le montage dans CapCut ordinateur
 python3 -c "import pycapcut" 2>/dev/null && ok "pycapcut" || { python3 -m pip install --user --quiet pycapcut 2>/dev/null && ok "pycapcut"; }
 
@@ -71,7 +71,8 @@ mkdir -p "$ELEVE"/{ma-da/polices,references,musiques,videos,b-roll/{entrainement
 ok "$ELEVE"
 echo "  Les polices (Instagram Sans + 15 polices gratuites)…"
 python3 "$RACINE/outils/police.py" --pack | tail -1
-python3 "$RACINE/outils/musiques.py" --sync | tail -1
+echo "  La banque de musiques de Théo…"
+if [[ -n "$CODE" ]]; then python3 "$RACINE/outils/musiques.py" --code "$CODE" | tail -1; else python3 "$RACINE/outils/musiques.py" --sync | tail -1; fi
 
 # 4. Le Studio dans Claude Code ----------------------------------------------------
 etape "4/5 Le Studio dans Claude Code"

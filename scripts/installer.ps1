@@ -1,5 +1,6 @@
 # Installe le Studio de Project Orange sur Windows 10/11. On peut le relancer sans risque.
 #   powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.editeur\scripts\installer.ps1"
+param([string]$code = "")
 $ErrorActionPreference = "Continue"
 $Racine = Split-Path -Parent $PSScriptRoot
 $Eleve = if ($env:EDITEUR_DOSSIER) { $env:EDITEUR_DOSSIER } else { Join-Path $env:USERPROFILE "Editeur" }
@@ -18,12 +19,13 @@ if (-not (A ffmpeg)) { Winget "Gyan.FFmpeg" }; Ok "ffmpeg"
 if (-not (A yt-dlp)) { Winget "yt-dlp.yt-dlp" }; Ok "yt-dlp"
 $Py = if (A py) { "py" } else { "python" }
 Etape "2/4 La transcription (faster-whisper, le modèle se télécharge à la première vidéo)"
-& $Py -m pip install --quiet --upgrade faster-whisper pillow pycapcut gdown | Out-Null; Ok "faster-whisper + Pillow + pycapcut + gdown"
+& $Py -m pip install --quiet --upgrade faster-whisper pillow pycapcut | Out-Null; Ok "faster-whisper + Pillow + pycapcut"
 
 Etape "3/4 Ton dossier Editeur"
 foreach ($d in "ma-da\polices","references","musiques","videos","b-roll\entrainement","b-roll\lifestyle","b-roll\podcast","b-roll\bureau") { New-Item -ItemType Directory -Force -Path (Join-Path $Eleve $d) | Out-Null }
 Ok $Eleve
 & $Py (Join-Path $Racine "outils\police.py") --pack | Select-Object -Last 1
+if ($code) { & $Py (Join-Path $Racine "outils\musiques.py") --code $code | Select-Object -Last 1 } else { & $Py (Join-Path $Racine "outils\musiques.py") --sync | Select-Object -Last 1 }
 
 Etape "4/4 Le Studio dans Claude Code"
 if (A claude) {

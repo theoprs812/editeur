@@ -371,8 +371,8 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outlin
 
 <script>
 const PROMPTS = {
-  mac: "Installe le Studio Project Orange.\n1. Télécharge https://github.com/theoprs812/editeur dans le dossier ~/.editeur (git clone ; s'il existe déjà, fais git pull).\n2. Lance : bash ~/.editeur/scripts/installer.sh\n3. Suis exactement ce qu'il affiche et explique-moi chaque étape en une phrase simple.",
-  win: "Installe le Studio Project Orange.\n1. Si git manque, installe-le avec winget (Git.Git). Télécharge https://github.com/theoprs812/editeur dans le dossier %USERPROFILE%\\.editeur (git clone ; s'il existe déjà, fais git pull).\n2. Lance : powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.editeur\\scripts\\installer.ps1\"\n3. Suis exactement ce qu'il affiche et explique-moi chaque étape en une phrase simple."
+  mac: "Installe le Studio Project Orange.\n1. Télécharge https://github.com/theoprs812/editeur dans le dossier ~/.editeur (git clone ; s'il existe déjà, fais git pull).\n2. Lance : bash ~/.editeur/scripts/installer.sh --code __CODE_MUSIQUES__\n3. Suis exactement ce qu'il affiche et explique-moi chaque étape en une phrase simple.",
+  win: "Installe le Studio Project Orange.\n1. Si git manque, installe-le avec winget (Git.Git). Télécharge https://github.com/theoprs812/editeur dans le dossier %USERPROFILE%\\.editeur (git clone ; s'il existe déjà, fais git pull).\n2. Lance : powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.editeur\\scripts\\installer.ps1\" -code __CODE_MUSIQUES__\n3. Suis exactement ce qu'il affiche et explique-moi chaque étape en une phrase simple."
 };
 const pre = document.getElementById("prompt");
 const boutons = { mac: document.getElementById("os-mac"), win: document.getElementById("os-win") };

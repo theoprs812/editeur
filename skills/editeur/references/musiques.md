@@ -1,6 +1,6 @@
 # Choisir la musique
 
-La banque de musiques de Théo arrive toute seule dans `~/Editeur/musiques/<style>/` (synchronisée à chaque ouverture de Claude par `outils/musiques.py`). `python3 "$EDITEUR/outils/musiques.py" --liste` les montre par style.
+La banque de musiques de Théo arrive toute seule dans `~/Editeur/musiques/<style>/` : chaque morceau qu'il ajoute chez lui part vers un dépôt privé, et `outils/musiques.py` le récupère à chaque ouverture de Claude. Les bruitages sont dans `~/Editeur/musiques/bruitages/` (interface, memes, réactions, transitions). `python3 "$EDITEUR/outils/musiques.py" --liste` les montre par style.
 
 | Style | Le son | Pour quel format |
 |---|---|---|

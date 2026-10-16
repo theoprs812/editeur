@@ -1,22 +1,24 @@
 #!/usr/bin/env python3
-"""La banque de musiques du Studio : celle de Théo, synchronisée depuis un dossier Google Drive partagé par lien.
+"""La banque de musiques du Studio : celle de Théo, synchronisée toute seule depuis son ordinateur.
 
-    python3 musiques.py --lien <lien du dossier Drive>   enregistre le lien (donné sur Slack) puis synchronise
-    python3 musiques.py --sync [--silencieux]             récupère seulement les nouveaux morceaux
-    python3 musiques.py --liste                           les musiques disponibles, par style
+    python3 musiques.py --code <code d'accès>   enregistre le code (fourni avec l'installation) puis synchronise
+    python3 musiques.py --sync [--silencieux]   récupère les nouveaux morceaux (lancé à chaque ouverture de Claude)
+    python3 musiques.py --liste                 les musiques disponibles, par style
 
-Les morceaux arrivent dans ~/Editeur/musiques/<style>/ (chill, hard, reflexion, emotion, suspense, inspirant,
-sigma, phonk, youtube-libre). Le lien n'est jamais écrit dans le dépôt public : il reste sur l'ordinateur de l'élève.
+Chez Théo, chaque morceau ajouté dans sa bibliothèque part tout seul (toutes les 15 min) vers un dépôt GitHub privé.
+Chez l'élève, ce dépôt est lu avec une clé de lecture seule (le code d'accès), sans compte GitHub.
+Les morceaux arrivent dans ~/Editeur/musiques/<style>/. Le code n'est jamais écrit dans le dépôt public du Studio.
 Les morceaux libres de droits fournis avec le Studio (musiques-libres/) sont copiés aussi.
 """
-import json, shutil, sys, tempfile
+import base64, os, platform, shutil, subprocess, sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from commun import DOSSIER_ELEVE, EDITEUR, AUDIO_EXT
 
 MUSIQUES = DOSSIER_ELEVE / "musiques"
-CONFIG = DOSSIER_ELEVE / ".config" / "musiques.json"
+CLE = DOSSIER_ELEVE / ".config" / "musiques.cle"
+DEPOT = "git@github.com:theoprs812/studio-musiques.git"
 LIBRES = EDITEUR / "musiques-libres"
 
 
@@ -34,45 +36,42 @@ def copier_libres():
                 shutil.copy2(f, dst)
 
 
+def git(*args):
+    env = dict(os.environ)
+    nul = "NUL" if platform.system() == "Windows" else "/dev/null"
+    env["GIT_SSH_COMMAND"] = (f'ssh -i "{CLE}" -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new '
+                              f'-o UserKnownHostsFile="{DOSSIER_ELEVE / ".config" / "known_hosts"}" -o LogLevel=ERROR')
+    return subprocess.run(["git", "-C", str(MUSIQUES), *args], capture_output=True, text=True, env=env)
+
+
 def synchroniser(silencieux=False):
     MUSIQUES.mkdir(parents=True, exist_ok=True)
     copier_libres()
-    if not CONFIG.exists():
-        dire("Pas encore de lien vers la banque de musiques : demande-le sur Slack (#general-p90).", silencieux)
+    if not CLE.exists():
+        dire("Pas de code d'accès à la banque de musiques : il est dans le message d'installation du tuto.", silencieux)
         return 0
-    lien = json.loads(CONFIG.read_text(encoding="utf-8"))["lien"]
-    try:
-        import gdown
-    except ImportError:
-        dire("gdown manque. Dis à Claude : « installe mon studio ».", silencieux)
+    if not (MUSIQUES / ".git").exists():
+        git("init", "-q", "-b", "main")
+        git("remote", "add", "origin", DEPOT)
+    avant = set(git("ls-files").stdout.splitlines())
+    r = git("fetch", "-q", "--depth", "1", "origin", "main")
+    if r.returncode != 0:
+        dire(f"Banque de musiques injoignable pour l'instant ({r.stderr.strip()[:140]}).", silencieux)
         return 0
-    with tempfile.TemporaryDirectory() as tmp:
-        try:
-            fichiers = gdown.download_folder(url=lien, output=tmp, quiet=True, use_cookies=False,
-                                             remaining_ok=True, skip_download=True)
-        except Exception as e:
-            dire(f"Banque de musiques injoignable pour l'instant ({str(e)[:120]}).", silencieux)
-            return 0
-        nouveaux = 0
-        for f in fichiers or []:
-            rel = Path(f.local_path).relative_to(tmp)
-            if len(rel.parts) > 1 and rel.parts[0].lower().startswith("studio"):
-                rel = Path(*rel.parts[1:])   # on enlève le dossier racine « Studio - Musiques »
-            if rel.suffix.lower() not in AUDIO_EXT:
-                continue
-            dst = MUSIQUES / rel
-            if dst.exists():
-                continue
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            try:
-                gdown.download(id=f.id, output=str(dst), quiet=True, use_cookies=False)
-                nouveaux += 1
-                dire(f"  + {rel}", silencieux)
-            except Exception:
-                if dst.exists():
-                    dst.unlink()
-    dire(f"✓ Banque de musiques à jour ({nouveaux} nouveau{'x' if nouveaux > 1 else ''} morceau{'x' if nouveaux > 1 else ''}).", silencieux)
-    return nouveaux
+    git("reset", "-q", "--hard", "origin/main")
+    apres = set(git("ls-files").stdout.splitlines())
+    nouveaux = [f for f in apres - avant if Path(f).suffix.lower() in AUDIO_EXT]
+    for f in sorted(nouveaux)[:20]:
+        dire(f"  + {f}", silencieux)
+    dire(f"✓ Banque de musiques à jour ({len(nouveaux)} nouveau(x) morceau(x), {len([f for f in apres if Path(f).suffix.lower() in AUDIO_EXT])} en tout).", silencieux)
+    return len(nouveaux)
+
+
+def enregistrer_code(code):
+    CLE.parent.mkdir(parents=True, exist_ok=True)
+    CLE.write_bytes(base64.b64decode(code.strip()))
+    if platform.system() != "Windows":
+        os.chmod(CLE, 0o600)
 
 
 def liste():
@@ -89,9 +88,8 @@ if __name__ == "__main__":
     a = sys.argv[1:]
     if not a:
         sys.exit(__doc__)
-    if a[0] == "--lien" and len(a) > 1:
-        CONFIG.parent.mkdir(parents=True, exist_ok=True)
-        CONFIG.write_text(json.dumps({"lien": a[1]}), encoding="utf-8")
+    if a[0] == "--code" and len(a) > 1:
+        enregistrer_code(a[1])
         synchroniser()
     elif a[0] == "--sync":
         synchroniser(silencieux="--silencieux" in a)
