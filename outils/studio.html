@@ -171,7 +171,7 @@ async function charger() {
   $("nom").textContent = E.nom; $("da").textContent = E.da_nom;
   $("temps").max = E.total;
   if (E.fond === "pret") {
-    if (!V.src) { V.src = "/media/fond?v=" + Date.now(); }
+    if (!V.src) { V.poster = "/media/affiche?v=" + Date.now(); V.src = "/media/fond?v=" + Date.now(); }
     $("attente").hidden = true;
   } else if (E.fond === "erreur") {
     $("attente").textContent = "L'aperçu n'a pas pu être préparé. Dis à Claude : « le studio ne marche pas ».";
@@ -206,7 +206,7 @@ function dessiner(force = false) {
   if (visible) {
     const c = hk.avec_fond ? Math.max(14, Math.floor(hk.taille / 4)) : 0;
     H.style.top = px(hk.y); H.style.width = px(E.largeur - 2 * (hk.marge_cotes || 100));
-    H.style.font = `${poids()} ${px(hk.taille * 0.82)}/1.32 ${famille()}`;
+    H.style.font = `${poids()} ${px(hk.taille * 0.70)}/1.32 ${famille()}`;
     const contenu = (hk.majuscules ? txt.toUpperCase() : txt).replace(/ ([?!:;»])/g, "\u00a0$1");
     H.innerHTML = "";
     const s = document.createElement("span"); s.textContent = contenu; s.style.color = hk.couleur;
@@ -227,7 +227,7 @@ function dessiner(force = false) {
     if (i >= 0) {
       const b = blocs[i];
       S.style.top = px(st.y); S.style.width = px(E.largeur - 2 * (st.marge_cotes || 120));
-      S.style.font = `${poids()} ${px(st.taille * 0.82)}/1.15 ${famille()}`;
+      S.style.font = `${poids()} ${px(st.taille * 0.70)}/1.15 ${famille()}`;
       S.style.color = st.couleur; S.style.webkitTextStroke = st.contour ? `${px(st.contour * 2)} ${st.couleur_contour}` : "0";
       S.innerHTML = "";
       let k0 = b.findIndex((w, k) => t >= w.s && (k === b.length - 1 || t < b[k + 1].s));
@@ -249,7 +249,7 @@ function dessiner(force = false) {
     const ys = { haut: E.hauteur * 0.22, centre: E.hauteur / 2, bas: E.hauteur * 0.7 };
     const tx = K.textes;
     d.style.top = px(x.y ?? ys[x.position || "centre"]); d.style.width = px(E.largeur - 2 * (tx.marge_cotes || 110));
-    d.style.font = `${poids()} ${px(tx.taille * 0.82)}/1.2 ${famille()}`; d.style.color = tx.couleur;
+    d.style.font = `${poids()} ${px(tx.taille * 0.70)}/1.2 ${famille()}`; d.style.color = tx.couleur;
     d.style.webkitTextStroke = tx.contour ? `${px(tx.contour * 2)} ${tx.couleur_contour}` : "0";
     d.textContent = (tx.majuscules ? x.texte.toUpperCase() : x.texte).replaceAll("\\n", "\n");
     T.appendChild(d);

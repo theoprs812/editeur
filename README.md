@@ -10,7 +10,7 @@ meilleure prise gardée, texte du début, sous-titres animés, b-roll trié et p
 
 ## Installer
 
-Le tuto illustré : `tuto/index.html`. En bref, dans l'onglet Code de l'app Claude, colle :
+Le tuto illustré : https://claude.ai/artifact/LbXK1cjS4NzKGnnaZbBv2v (source : `tuto/index.html`). En bref, dans l'onglet Code de l'app Claude, colle :
 
 > Installe l'Éditeur Project Orange. 1. Télécharge https://github.com/theoprs812/editeur dans le dossier ~/.editeur (git clone). 2. Lance : bash ~/.editeur/scripts/installer.sh 3. Suis ce qu'il affiche.
 

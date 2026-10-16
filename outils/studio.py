@@ -56,15 +56,24 @@ class Session:
         cle = self.cle_fond(m)
         marque = self.travail / "studio-fond.cle"
         if self.fond.exists() and marque.exists() and marque.read_text() == cle:
+            self.affiche()
             ETAT["fond"] = "pret"
             return
         ETAT["fond"] = "preparation"
         try:
             rendu.rendre(self.montage, apercu=True, sans_textes=True, sortie=self.fond)
             marque.write_text(cle)
+            self.affiche()
             ETAT["fond"] = "pret"
         except Exception as e:
             ETAT["fond"], ETAT["erreur"] = "erreur", str(e)[-800:]
+
+    def affiche(self):
+        """Une image de la vidéo, montrée avant que la lecture démarre."""
+        img = self.travail / "studio-fond.jpg"
+        if not img.exists() or img.stat().st_mtime < self.fond.stat().st_mtime:
+            from commun import ffmpeg, lancer
+            lancer([ffmpeg(), "-y", "-v", "error", "-ss", "0.5", "-i", str(self.fond), "-frames:v", "1", "-q:v", "3", str(img)])
 
     def etat(self):
         _, projet, m, k = rendu.preparer(self.montage)
@@ -209,6 +218,8 @@ def gestionnaire(session):
                     self.json(session.etat())
                 elif u.path == "/media/fond":
                     servir_fichier(self, session.fond, "video/mp4")
+                elif u.path == "/media/affiche":
+                    servir_fichier(self, session.travail / "studio-fond.jpg", "image/jpeg")
                 elif u.path == "/media/fichier":
                     f = Path(ETAT["fichier"] or "")
                     servir_fichier(self, f, "video/mp4") if f.is_file() else self.send_error(404)
