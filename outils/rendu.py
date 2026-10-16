@@ -206,20 +206,32 @@ def hook_instagram(texte, hk, fichier_police, largeur_max, out):
     rayon = arr * X if arr > 1 else em * arr   # arrondi > 1 : en pixels ; sinon en fraction de la taille
     haut_ligne = em * 1.2
     utile = largeur_max * X - 2 * pad_x
-    lignes = []
-    for para in texte.split("\n"):
-        cur = ""
-        for mot in para.split(" "):
-            if not mot:
-                continue
-            essai = (cur + " " + mot).strip()
-            if cur and f.getlength(essai) > utile:
-                lignes.append(cur)
-                cur = mot
-            else:
-                cur = essai
-        if cur:
-            lignes.append(cur)
+    def couper_lignes(largeur):
+        out = []
+        for para in texte.split("\n"):
+            cur = ""
+            for mot in para.split(" "):
+                if not mot:
+                    continue
+                essai = (cur + " " + mot).strip()
+                if cur and f.getlength(essai) > largeur:
+                    out.append(cur)
+                    cur = mot
+                else:
+                    cur = essai
+            if cur:
+                out.append(cur)
+        return out
+    lignes = couper_lignes(utile)
+    # lignes équilibrées : la plus petite largeur qui garde le même nombre de lignes (pas de mot orphelin)
+    bas, haut = utile * 0.4, utile
+    for _ in range(18):
+        milieu = (bas + haut) / 2
+        if len(couper_lignes(milieu)) <= len(lignes):
+            haut = milieu
+        else:
+            bas = milieu
+    lignes = couper_lignes(haut)
     larg = [f.getlength(l) for l in lignes]
     boite = hk.get("avec_fond", True)
     L = int(max(larg) + 2 * pad_x + 4 * X)
