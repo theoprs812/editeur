@@ -281,7 +281,11 @@ def remplacer(racine, nom):
     """Supprime l'ancien projet « Editeur - … » du même nom (seulement ceux créés par le Studio) et sa ligne dans la liste."""
     if not nom.startswith("Editeur - ") or not (racine / nom).exists():
         return
-    shutil.rmtree(racine / nom, ignore_errors=True)
+    corbeille = Path.home() / ".Trash"
+    if corbeille.exists():   # Mac : à la Corbeille, récupérable
+        shutil.move(str(racine / nom), str(corbeille / f"{nom} {time.strftime('%Y%m%d-%H%M%S')}"))
+    else:
+        (racine / nom).rename(racine / f"{nom} (ancien {time.strftime('%Y%m%d-%H%M%S')})")
     racine_p = racine / "root_meta_info.json"
     if racine_p.exists():
         r = json.loads(racine_p.read_text(encoding="utf-8"))
