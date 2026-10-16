@@ -29,7 +29,7 @@ main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; height: calc(
 .cadre img.vrai { z-index: 5; }
 .calque { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
 .hook, .sous, .texte { position: absolute; left: 50%; text-align: center; pointer-events: auto; white-space: pre-line; }
-.hook { transform: translateX(-50%); cursor: ns-resize; }
+.hook { transform: translateX(-50%); cursor: ns-resize; text-wrap: balance; }
 .hook span { box-decoration-break: clone; -webkit-box-decoration-break: clone; line-height: 1.32; }
 .sous, .texte { transform: translate(-50%, -50%); line-height: 1.15; }
 .sous { cursor: ns-resize; }
