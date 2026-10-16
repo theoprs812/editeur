@@ -58,10 +58,15 @@ if ff_ok; then ok "ffmpeg"; else brew install ffmpeg-full; ok "ffmpeg (complet)"
 if a whisper-cli; then ok "whisper"; else brew install whisper-cpp; ok "whisper"; fi
 if a yt-dlp; then ok "yt-dlp"; brew upgrade yt-dlp >/dev/null 2>&1 || true; else brew install yt-dlp; ok "yt-dlp"; fi
 
+# Pillow : dessine le texte du début façon Instagram (coins arrondis)
+python3 -c "import PIL" 2>/dev/null && ok "Pillow" || { python3 -m pip install --user --quiet pillow 2>/dev/null || brew install pillow; ok "Pillow"; }
+
 # 3. Le dossier de l'élève -------------------------------------------------------
 etape "3/5 Ton dossier Editeur"
 mkdir -p "$ELEVE"/{ma-da/polices,references,musiques,videos,b-roll/{entrainement,lifestyle,podcast,bureau}}
 ok "$ELEVE"
+echo "  Les polices (Instagram Sans + 15 polices gratuites)…"
+python3 "$RACINE/outils/police.py" --pack | tail -1
 
 # 4. L'Éditeur dans Claude Code ----------------------------------------------------
 etape "4/5 L'Éditeur dans Claude Code"

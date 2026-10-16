@@ -12,7 +12,7 @@ import hashlib, json, re, sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from commun import ffmpeg, lancer, sonde, kit, mots, dossier_projet, chemin, format_image, adapter_kit, POLICES, W, H, FPS, IMAGE_EXT, DOSSIER_ELEVE
+from commun import ffmpeg, lancer, sonde, kit, mots, dossier_projet, chemin, fichier_police, format_image, adapter_kit, POLICES, W, H, FPS, IMAGE_EXT, DOSSIER_ELEVE
 
 TONEMAP = "zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv"
 
@@ -132,17 +132,21 @@ def blocs_sous_titres(projet, plans_t, n_max):
     return blocs
 
 
-def ecrire_ass(projet, m, k, plans_t, total, chemin):
-    police = k["police"]["famille"]
-    gras = int(k["police"].get("poids", 700 if k["police"].get("gras", True) else 400))
+def police_element(k, sec):
+    """La police d'un élément : la sienne (k[sec]["police"]) sinon celle de la DA."""
+    p = (k.get(sec) or {}).get("police") or k["police"]
+    return p.get("famille", k["police"]["famille"]), int(p.get("poids", 700 if p.get("gras", True) else 400))
+
+
+def ecrire_ass(projet, m, k, plans_t, total, chemin, hook_image=False):
     st, hk, tx = k["sous_titres"], k["hook"], k["textes"]
     lignes = ["[Script Info]", "ScriptType: v4.00+", f"PlayResX: {W}", f"PlayResY: {H}", "WrapStyle: 0",
               "ScaledBorderAndShadow: yes", "", "[V4+ Styles]",
               "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, "
               "Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-              style("Sous", police, gras, st, 5, st.get("marge_cotes", 120)),
-              style("Hook", police, gras, hk, 8, hk.get("marge_cotes", 110)),
-              style("Texte", police, gras, tx, 5, tx.get("marge_cotes", 110)),
+              style("Sous", *police_element(k, "sous_titres"), st, 5, st.get("marge_cotes", 120)),
+              style("Hook", *police_element(k, "hook"), hk, 8, hk.get("marge_cotes", 110)),
+              style("Texte", *police_element(k, "textes"), tx, 5, tx.get("marge_cotes", 110)),
               "", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"]
     pop = "{\\fscx82\\fscy82\\t(0,110,\\fscx100\\fscy100)}"
     if m.get("sous_titres", True):
@@ -163,7 +167,7 @@ def ecrire_ass(projet, m, k, plans_t, total, chemin):
                                for j, w in enumerate(mots_txt))
                 lignes.append(f"Dialogue: 1,{t_ass(de)},{t_ass(a)},Sous,,0,0,0,,{pos}{anim if wi == 0 else ''}{txt}")
     h = m.get("hook")
-    if h and h.get("texte"):
+    if h and h.get("texte") and not hook_image:
         anim = "{\\fscx80\\fscy80\\t(0,160,\\fscx100\\fscy100)}" if hk.get("animation") == "pop" else ""
         lignes.append(f"Dialogue: 3,{t_ass(h.get('de', 0))},{t_ass(min(total, h.get('a', 3)))},Hook,,0,0,0,,"
                       f"{{\\an8\\pos({W // 2},{hk.get('y', 300)})}}{anim}{nettoie(h['texte'], hk.get('majuscules'))}")
@@ -174,6 +178,91 @@ def ecrire_ass(projet, m, k, plans_t, total, chemin):
         lignes.append(f"Dialogue: 2,{t_ass(t.get('de', 0))},{t_ass(min(total, t.get('a', total)))},Texte,,0,0,0,,"
                       f"{{\\an5\\pos({W // 2},{y})}}{pop if t.get('animation', 'pop') == 'pop' else ''}{txt}")
     chemin.write_text("\n".join(lignes) + "\n", encoding="utf-8")
+
+
+def polices_ok(k, dossier):
+    """Une police absente de l'ordinateur → TikTok Sans (fournie avec l'éditeur), jamais une police système au hasard."""
+    for sec in (None, "hook", "sous_titres", "textes"):
+        p = k["police"] if sec is None else (k.get(sec) or {}).get("police")
+        if p and not fichier_police([dossier], p.get("famille", ""), p.get("poids", 700)):
+            print(f"  (police « {p.get('famille')} » absente : TikTok Sans à la place)")
+            p["famille"] = "TikTok Sans"
+
+
+# ---------- le texte du début façon Instagram (image) ----------
+
+def hook_instagram(texte, hk, fichier_police, largeur_max, out):
+    """Dessine le texte du début comme le texte natif d'Instagram : une boîte par ligne, coins arrondis,
+    lignes fondues en une seule forme. Rendu en 2x puis réduit (bords lisses). Renvoie (largeur, hauteur)."""
+    from PIL import Image, ImageDraw, ImageFont
+    X = 2
+    em = hk.get("taille", 88) * 0.70 * X
+    f = ImageFont.truetype(str(fichier_police), round(em))
+    if hk.get("majuscules"):
+        texte = texte.upper()
+    texte = re.sub(r" ([?!:;»])", "\u00a0\\1", texte).replace("« ", "«\u00a0")   # jamais un « ? » seul en début de ligne
+    pad_x, pad_y, rayon = em * 0.36, em * 0.07, em * hk.get("arrondi", 0.22)
+    haut_ligne = em * 1.2
+    utile = largeur_max * X - 2 * pad_x
+    lignes = []
+    for para in texte.split("\n"):
+        cur = ""
+        for mot in para.split(" "):
+            if not mot:
+                continue
+            essai = (cur + " " + mot).strip()
+            if cur and f.getlength(essai) > utile:
+                lignes.append(cur)
+                cur = mot
+            else:
+                cur = essai
+        if cur:
+            lignes.append(cur)
+    larg = [f.getlength(l) for l in lignes]
+    boite = hk.get("avec_fond", True)
+    L = int(max(larg) + 2 * pad_x + 4 * X)
+    Ht = int(len(lignes) * (haut_ligne + 2 * pad_y) + 4 * X)
+    img = Image.new("RGBA", (L, Ht), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    cx = L / 2
+    rects = []
+    y = 2 * X
+    for w in larg:
+        h = haut_ligne + 2 * pad_y
+        rects.append((cx - w / 2 - pad_x, y, cx + w / 2 + pad_x, y + h))
+        y += h
+    if boite:
+        fond = hk.get("fond", "#FFFFFF")
+        for r in rects:
+            d.rounded_rectangle(r, radius=rayon, fill=fond)
+        for a, b in zip(rects, rects[1:]):   # on soude les lignes entre elles
+            x0, x1 = max(a[0], b[0]), min(a[2], b[2])
+            d.rectangle((x0, a[3] - rayon, x1, b[1] + rayon), fill=fond)
+    contour = 0 if boite else int(hk.get("contour", 0) * X)
+    for (x0, y0, x1, y1), ligne in zip(rects, lignes):
+        d.text((cx, (y0 + y1) / 2), ligne, font=f, fill=hk.get("couleur", "#000000"), anchor="mm",
+               stroke_width=contour, stroke_fill=hk.get("couleur_contour", "#000000"))
+    img = img.resize((L // X, Ht // X), Image.LANCZOS)
+    img.save(out)
+    return img.size
+
+
+def preparer_hook(m, k, travail):
+    """Image du texte du début si Pillow et la police sont là ; sinon le .ass s'en charge (boîtes carrées)."""
+    h, hk = m.get("hook"), k["hook"]
+    if not (h and h.get("texte")) or hk.get("moteur") == "ass":
+        return None
+    try:
+        import PIL  # noqa
+    except ImportError:
+        return None
+    fam, poids = police_element(k, "hook")
+    f = fichier_police([dossier_polices(travail, k)], fam, poids)
+    if not f:
+        return None
+    out = travail / "hook.png"
+    w, hh = hook_instagram(h["texte"], hk, f, W - 2 * hk.get("marge_cotes", 100), out)
+    return out, w, hh
 
 
 # ---------- étape 2 : l'assemblage ----------
@@ -244,7 +333,9 @@ def rendre(montage_path, apercu=False, image=None, sans_textes=False, sortie=Non
     concat = travail / "concat.txt"
     concat.write_text("\n".join(liste) + "\n", encoding="utf-8")
     ass = travail / "textes.ass"
-    ecrire_ass(projet, m, k, plans_t, total, ass)
+    polices_ok(k, dossier_polices(travail, k))
+    hook_img = None if sans_textes else preparer_hook(m, k, travail)
+    ecrire_ass(projet, m, k, plans_t, total, ass, hook_image=bool(hook_img))
 
     cmd = [ffmpeg(), "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", str(concat)]
     filt, vlab, n_in = [], "[0:v]", 1
@@ -266,6 +357,16 @@ def rendre(montage_path, apercu=False, image=None, sans_textes=False, sortie=Non
             pos = "x=0:y=0"
         filt.append(f"{vlab}[i{j}]overlay={pos}:enable='between(t,{a},{a + d})':eof_action=pass[b{j}]")
         vlab, n_in = f"[b{j}]", n_in + 1
+    if hook_img:   # texte du début façon Instagram : petite entrée « pop » puis fixe
+        png, hw, hh = hook_img
+        h = m["hook"]
+        de, a_ = float(h.get("de", 0)), min(total, float(h.get("a", 3)))
+        y0 = k["hook"].get("y", 300)
+        cmd += ["-loop", "1", "-t", f"{a_ - de:.3f}", "-i", str(png)]
+        filt.append(f"[{n_in}:v]format=rgba,scale=w='trunc(iw*min(1,0.82+0.18*t/0.16)/2)*2':h=-2:eval=frame,"
+                    f"fade=t=in:st=0:d=0.08:alpha=1,setpts=PTS-STARTPTS+{de}/TB[hk]")
+        filt.append(f"{vlab}[hk]overlay=x='(W-w)/2':y='{y0}+({hh}-h)/2':enable='between(t,{de},{a_})':eof_action=pass[bh]")
+        vlab, n_in = "[bh]", n_in + 1
     fin_v = "null" if sans_textes else f"subtitles='{echappe_filtre(ass)}':fontsdir='{echappe_filtre(dossier_polices(travail, k))}'"
     if apercu:
         fin_v += f",scale={W // 2}:{H // 2}"

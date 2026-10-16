@@ -15,22 +15,12 @@ from urllib.parse import urlparse, parse_qs
 
 sys.path.insert(0, str(Path(__file__).parent))
 import rendu
-from commun import dossier_projet, DOSSIER_ELEVE, DA_DEFAUT
+from commun import dossier_projet, DOSSIER_ELEVE, DA_DEFAUT, police_de
 
 ICI = Path(__file__).parent
-POIDS = {"thin": 100, "light": 300, "regular": 400, "medium": 500, "semibold": 600, "bold": 700, "extrabold": 800, "black": 900}
-NOMS = {"TikTokSans": "TikTok Sans"}
 
 ETAT = {"fond": "absent", "fabrication": None, "erreur": None, "fichier": None}
 VERROU = threading.Lock()
-
-
-def police_de(fichier):
-    """TikTokSans-Bold.ttf → ("TikTok Sans", 700) ; Inter-800.ttf → ("Inter", 800)."""
-    nom, _, suite = Path(fichier).stem.partition("-")
-    poids = int(suite) if suite.isdigit() else POIDS.get(suite.lower(), 400)
-    famille = NOMS.get(nom, re.sub(r"(?<=[a-z])(?=[A-Z])", " ", nom))
-    return famille, poids
 
 
 class Session:

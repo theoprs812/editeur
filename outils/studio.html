@@ -112,6 +112,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
       <details open>
         <summary>Texte du début</summary>
         <div class="champ"><label for="h-texte">Ce qui est écrit</label><textarea id="h-texte"></textarea></div>
+        <div class="ligne"><label for="hp-famille">Police</label><select id="hp-famille"></select></div>
+        <div class="ligne"><label for="hp-poids">Épaisseur</label><select id="hp-poids"></select></div>
         <div class="ligne"><label for="h-a">Reste à l'écran jusqu'à (s)</label><input type="number" id="h-a" min="0.5" step="0.1"></div>
         <div class="champ"><label for="h-taille">Taille</label><input type="range" id="h-taille" min="40" max="140"></div>
         <div class="champ"><label for="h-y">Hauteur (ou glisse le texte sur la vidéo)</label><input type="range" id="h-y" min="0" max="1920"></div>
@@ -123,6 +125,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
       <details open>
         <summary>Sous-titres</summary>
         <div class="ligne"><label for="s-on">Afficher les sous-titres</label><span class="bascule"><input type="checkbox" id="s-on"><span></span></span></div>
+        <div class="ligne"><label for="sp-famille">Police</label><select id="sp-famille"></select></div>
+        <div class="ligne"><label for="sp-poids">Épaisseur</label><select id="sp-poids"></select></div>
         <div class="ligne"><label for="s-mot-on">Surligner le mot dit</label><span class="bascule"><input type="checkbox" id="s-mot-on"><span></span></span></div>
         <div class="ligne" id="l-s-mot"><label for="s-mot">Couleur du mot dit</label><input type="color" id="s-mot"></div>
         <div class="champ"><label>Mots à la fois</label><div class="seg" id="s-n" role="group" aria-label="Mots à la fois"><button type="button" data-v="1">1</button><button type="button" data-v="2">2</button><button type="button" data-v="3">3</button><button type="button" data-v="4">4</button></div></div>
@@ -134,16 +138,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <div class="ligne"><label for="s-maj">Tout en majuscules</label><span class="bascule"><input type="checkbox" id="s-maj"><span></span></span></div>
       </details>
       <details>
-        <summary>Police</summary>
-        <div class="champ"><label for="p-famille">Police</label><select id="p-famille"></select></div>
-        <div class="champ"><label for="p-poids">Épaisseur</label><select id="p-poids"></select></div>
-        <p class="aide">Une autre police ? Demande-la à Claude : « mets la police Montserrat ».</p>
-      </details>
-      <details>
         <summary>Affichage</summary>
         <div class="ligne"><label for="v-safe">Montrer les zones cachées par Instagram</label><span class="bascule"><input type="checkbox" id="v-safe"><span></span></span></div>
         <button class="b" type="button" id="b-vrai" style="width:100%;margin-top:12px">Voir la vraie image à ce moment</button>
         <p class="aide">L'aperçu est dessiné en direct. Ce bouton fabrique la vraie image, telle qu'elle sortira.</p>
+        <p class="aide">Une police qui n'est pas dans la liste ? Demande-la à Claude : « ajoute la police Montserrat ».</p>
       </details>
     </div>
     <div class="actions">
@@ -193,8 +192,9 @@ function dimensionner() {
 }
 
 function px(v) { return (v * echelle) + "px"; }
-function famille() { return `"${K.police.famille}", system-ui, sans-serif`; }
-function poids() { return K.police.poids || (K.police.gras === false ? 400 : 700); }
+function pol(sec) { return (sec && K[sec] && K[sec].police) || K.police; }
+function famille(sec) { return `"${pol(sec).famille}", "TikTok Sans", system-ui, sans-serif`; }
+function poids(sec) { const p = pol(sec); return p.poids || (p.gras === false ? 400 : 700); }
 
 function dessiner(force = false) {
   if (!E) return;
@@ -206,11 +206,12 @@ function dessiner(force = false) {
   if (visible) {
     const c = hk.avec_fond ? Math.max(14, Math.floor(hk.taille / 4)) : 0;
     H.style.top = px(hk.y); H.style.width = px(E.largeur - 2 * (hk.marge_cotes || 100));
-    H.style.font = `${poids()} ${px(hk.taille * 0.70)}/1.32 ${famille()}`;
+    H.style.font = `${poids("hook")} ${px(hk.taille * 0.70)}/1.2 ${famille("hook")}`;
     const contenu = (hk.majuscules ? txt.toUpperCase() : txt).replace(/ ([?!:;»])/g, "\u00a0$1");
     H.innerHTML = "";
     const s = document.createElement("span"); s.textContent = contenu; s.style.color = hk.couleur;
-    if (hk.avec_fond) { s.style.background = hk.fond; s.style.padding = `${px(c * 0.45)} ${px(c)}`; }
+    const em = hk.taille * 0.70;
+    if (hk.avec_fond) { s.style.background = hk.fond; s.style.padding = `${px(em * 0.07)} ${px(em * 0.36)}`; s.style.borderRadius = px(em * (hk.arrondi ?? 0.22)); }
     else if (hk.contour) { s.className = "trait"; s.style.webkitTextStroke = `${px(hk.contour * 2)} ${hk.couleur_contour}`; }
     H.appendChild(s);
   }
@@ -227,7 +228,7 @@ function dessiner(force = false) {
     if (i >= 0) {
       const b = blocs[i];
       S.style.top = px(st.y); S.style.width = px(E.largeur - 2 * (st.marge_cotes || 120));
-      S.style.font = `${poids()} ${px(st.taille * 0.70)}/1.15 ${famille()}`;
+      S.style.font = `${poids("sous_titres")} ${px(st.taille * 0.70)}/1.15 ${famille("sous_titres")}`;
       S.style.color = st.couleur; S.style.webkitTextStroke = st.contour ? `${px(st.contour * 2)} ${st.couleur_contour}` : "0";
       S.innerHTML = "";
       let k0 = b.findIndex((w, k) => t >= w.s && (k === b.length - 1 || t < b[k + 1].s));
@@ -249,7 +250,7 @@ function dessiner(force = false) {
     const ys = { haut: E.hauteur * 0.22, centre: E.hauteur / 2, bas: E.hauteur * 0.7 };
     const tx = K.textes;
     d.style.top = px(x.y ?? ys[x.position || "centre"]); d.style.width = px(E.largeur - 2 * (tx.marge_cotes || 110));
-    d.style.font = `${poids()} ${px(tx.taille * 0.70)}/1.2 ${famille()}`; d.style.color = tx.couleur;
+    d.style.font = `${poids("textes")} ${px(tx.taille * 0.70)}/1.2 ${famille("textes")}`; d.style.color = tx.couleur;
     d.style.webkitTextStroke = tx.contour ? `${px(tx.contour * 2)} ${tx.couleur_contour}` : "0";
     d.textContent = (tx.majuscules ? x.texte.toUpperCase() : x.texte).replaceAll("\\n", "\n");
     T.appendChild(d);
@@ -272,18 +273,23 @@ function regrouper(n) {
 }
 
 function remplirPolices() {
-  const f = $("p-famille"); f.innerHTML = "";
-  for (const fam of Object.keys(E.polices)) { const o = document.createElement("option"); o.value = o.textContent = fam; f.appendChild(o); }
-  if (!E.polices[K.police.famille]) { const o = document.createElement("option"); o.value = o.textContent = K.police.famille; f.appendChild(o); }
   let css = "";
   for (const [fam, lst] of Object.entries(E.polices)) for (const p of lst) css += `@font-face{font-family:"${fam}";src:url("/polices/${encodeURIComponent(p.fichier)}");font-weight:${p.poids};}`;
   const st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
+  for (const id of ["hp-famille", "sp-famille"]) {
+    const f = $(id); f.innerHTML = "";
+    for (const fam of Object.keys(E.polices).sort()) { const o = document.createElement("option"); o.value = o.textContent = fam; f.appendChild(o); }
+  }
 }
-function remplirPoids() {
-  const p = $("p-poids"), lst = E.polices[K.police.famille] || [{ poids: 700 }]; p.innerHTML = "";
-  const noms = { 400: "Normale", 500: "Moyenne", 600: "Semi-grasse", 700: "Grasse", 800: "Très grasse", 900: "Noire" };
-  for (const x of lst) { const o = document.createElement("option"); o.value = x.poids; o.textContent = noms[x.poids] || x.poids; p.appendChild(o); }
-  p.value = poids(); if (!p.value && p.options.length) p.value = p.options[p.options.length - 1].value;
+const NOMS_POIDS = { 300: "Fine", 400: "Normale", 500: "Moyenne", 600: "Semi-grasse", 700: "Grasse", 800: "Très grasse", 900: "Noire" };
+function remplirPoids(sec, id) {
+  const p = $(id), lst = E.polices[pol(sec).famille] || [{ poids: 700 }]; p.innerHTML = "";
+  for (const x of lst) { const o = document.createElement("option"); o.value = x.poids; o.textContent = NOMS_POIDS[x.poids] || x.poids; p.appendChild(o); }
+  p.value = poids(sec); if (!p.value && p.options.length) p.value = p.options[p.options.length - 1].value;
+}
+function choisirPolice(sec, idF, idP) {
+  K[sec].police = { famille: $(idF).value, poids: 700 };
+  remplirPoids(sec, idP); K[sec].police.poids = +$(idP).value;
 }
 
 function remplirChamps() {
@@ -295,7 +301,8 @@ function remplirChamps() {
   $("s-taille").value = st.taille; $("s-y").max = max; $("s-y").value = st.y; $("s-couleur").value = st.couleur;
   $("s-contour").value = st.contour || 0; $("s-ccontour").value = st.couleur_contour || "#000000"; $("s-maj").checked = !!st.majuscules;
   for (const b of $("s-n").children) b.setAttribute("aria-pressed", String(+b.dataset.v === (st.mots_par_bloc || 3)));
-  $("p-famille").value = K.police.famille; remplirPoids();
+  $("hp-famille").value = pol("hook").famille; remplirPoids("hook", "hp-poids");
+  $("sp-famille").value = pol("sous_titres").famille; remplirPoids("sous_titres", "sp-poids");
   $("l-h-fond").hidden = !hk.avec_fond; $("l-s-mot").hidden = !st.couleur_mot;
 }
 
@@ -311,8 +318,10 @@ lier("s-mot", (e) => K.sous_titres.couleur_mot = e.value);
 lier("s-taille", (e) => K.sous_titres.taille = +e.value); lier("s-y", (e) => K.sous_titres.y = +e.value);
 lier("s-couleur", (e) => K.sous_titres.couleur = e.value); lier("s-contour", (e) => K.sous_titres.contour = +e.value);
 lier("s-ccontour", (e) => K.sous_titres.couleur_contour = e.value); lier("s-maj", (e) => K.sous_titres.majuscules = e.checked, "change");
-lier("p-famille", (e) => { K.police.famille = e.value; remplirPoids(); K.police.poids = +$("p-poids").value; }, "change");
-lier("p-poids", (e) => K.police.poids = +e.value, "change");
+lier("hp-famille", () => choisirPolice("hook", "hp-famille", "hp-poids"), "change");
+lier("hp-poids", (e) => K.hook.police = { famille: pol("hook").famille, poids: +e.value }, "change");
+lier("sp-famille", () => choisirPolice("sous_titres", "sp-famille", "sp-poids"), "change");
+lier("sp-poids", (e) => K.sous_titres.police = { famille: pol("sous_titres").famille, poids: +e.value }, "change");
 $("s-n").addEventListener("click", (ev) => {
   const b = ev.target.closest("button"); if (!b) return;
   K.sous_titres.mots_par_bloc = +b.dataset.v; for (const x of $("s-n").children) x.setAttribute("aria-pressed", String(x === b));

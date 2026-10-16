@@ -13,5 +13,7 @@ a whisper-cli && ok "whisper" || non "whisper"
 M="$HOME/Library/Application Support/whisper.cpp/models"
 [[ -f "$M/ggml-large-v3-turbo-q5_0.bin" || -f "$M/ggml-large-v3-turbo.bin" ]] && ok "modèle de transcription" || non "modèle de transcription"
 a yt-dlp && ok "yt-dlp" || non "yt-dlp"
+python3 -c "import PIL" 2>/dev/null && ok "Pillow" || non "Pillow"
+ls "${EDITEUR_DOSSIER:-$HOME/Editeur}/ma-da/polices/"Instagram_Sans-* >/dev/null 2>&1 && ok "polices" || non "polices"
 [[ -d "${EDITEUR_DOSSIER:-$HOME/Editeur}" ]] && ok "dossier Editeur" || non "dossier Editeur"
 exit $manque

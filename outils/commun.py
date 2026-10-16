@@ -159,3 +159,27 @@ def dossier_projet(fichier):
         if d.name in ("travail", "export", "rushes", "b-roll", "musique"):
             return d.parent
     return f.parent
+
+
+POIDS = {"thin": 100, "light": 300, "regular": 400, "medium": 500, "semibold": 600, "bold": 700, "extrabold": 800, "black": 900}
+NOMS = {"TikTokSans": "TikTok Sans", "InstagramSans": "Instagram Sans"}
+
+
+def police_de(fichier):
+    """Instagram_Sans-700.ttf → ("Instagram Sans", 700) ; TikTokSans-Bold.ttf → ("TikTok Sans", 700)."""
+    nom, _, suite = Path(fichier).stem.rpartition("-")
+    if not nom:
+        nom, suite = suite, "regular"
+    poids = int(suite) if suite.isdigit() else POIDS.get(suite.lower(), 400)
+    return NOMS.get(nom, nom.replace("_", " ")), poids
+
+
+def fichier_police(dossiers, famille, poids=700):
+    """Le fichier de police le plus proche (famille exacte, graisse la plus proche)."""
+    meilleurs = []
+    for d in dossiers:
+        for f in Path(d).glob("*.[ot]tf") if Path(d).exists() else []:
+            fam, p = police_de(f.name)
+            if fam.lower() == str(famille).lower():
+                meilleurs.append((abs(p - int(poids)), f))
+    return sorted(meilleurs)[0][1] if meilleurs else None

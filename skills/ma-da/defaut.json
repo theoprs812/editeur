@@ -1,22 +1,23 @@
 {
-  "nom": "Template 0 (classique)",
+  "nom": "Template 0 (Instagram)",
   "version": 1,
-  "source": "DA par défaut de l'Éditeur",
+  "source": "DA par défaut : le texte natif d'Instagram",
   "police": {
-    "famille": "TikTok Sans",
-    "gras": true
+    "famille": "Instagram Sans",
+    "poids": 700
   },
   "hook": {
-    "taille": 88,
+    "taille": 92,
     "couleur": "#000000",
     "fond": "#FFFFFF",
     "avec_fond": true,
     "contour": 0,
     "couleur_contour": "#000000",
-    "y": 290,
-    "marge_cotes": 100,
+    "y": 300,
+    "marge_cotes": 110,
     "majuscules": false,
-    "animation": "pop"
+    "animation": "pop",
+    "arrondi": 0.22
   },
   "sous_titres": {
     "taille": 80,
