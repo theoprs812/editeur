@@ -22,7 +22,7 @@ Tous les temps sont en secondes. `debut` / `fin` = temps DANS le fichier source.
   "hook": {"texte": "J'ai arrêté de poster tous les jours", "de": 0, "a": 3.0},
   "sous_titres": true,
   "textes": [{"texte": "3 erreurs que tout le monde fait", "de": 0, "a": 6.5, "position": "centre"}],
-  "musique": {"source": "musique/son.mp3", "debut": 0, "niveau_db": -22},
+  "musique": {"source": "musique/son.mp3", "debut": 0, "niveau_db": -12},
   "zoom": []
 }
 ```
@@ -39,7 +39,8 @@ Tous les temps sont en secondes. `debut` / `fin` = temps DANS le fichier source.
 | `hook` | Le titre du début (hook texte). Gros, en haut, avec la boîte de la DA. Animé à l'entrée |
 | `sous_titres` | `true` : les sous-titres se fabriquent tout seuls depuis les transcriptions (`travail/<nom>.mots.json`), mot par mot, 2 à 3 mots à la fois, mot dit en couleur |
 | `textes` | Textes posés à l'écran hors sous-titres (one shot, dix shots, étiquettes). `position` : `haut`, `centre`, `bas` |
-| `musique` | Une musique sous la vidéo. `niveau_db` : `-22` sous une voix, `0` quand la musique est au premier plan (one shot, dix shots). Baissée automatiquement quand quelqu'un parle |
+| `musique` | Une musique sous la vidéo. `niveau_db` = combien elle est sous la voix, en LU : `-12` sous une voix (assez pour qu'on l'entende), `0` quand elle est au premier plan (one shot, 10 shots sans voix). `debut` = l'endroit du morceau où ça part : TOUJOURS sur le drop (le premier coup franc), jamais sur une intro calme ou un silence. Écoute ou mesure le volume (ebur128) pour le trouver |
+| `ajustements` | Réglages de DA pour CETTE vidéo seulement, sans toucher à la DA de l'élève. Ex. visage qui remplit l'écran : `{"sous_titres": {"y": 1420}}` pour passer les sous-titres sous le menton ; `{"hook": {"y": 220}}` pour monter le texte du début |
 | `zoom` | Vide par défaut. `[{"a": 5.0, "duree": 2.0, "echelle": 1.15}]` pour un zoom demandé par l'élève. Jamais de zoom automatique |
 
 ## Les commandes
@@ -50,6 +51,7 @@ Tous les temps sont en secondes. `debut` / `fin` = temps DANS le fichier source.
 |---|---|
 | `python3 "$EDITEUR/outils/transcrire.py" rushes/IMG_1234.MOV` | Transcrit (Whisper, en local) → `travail/IMG_1234.mots.json` + `travail/IMG_1234.txt` lisible avec les temps |
 | `python3 "$EDITEUR/outils/couper.py" travail/garde.json` | Prend les passages gardés par Claude (`garde.json`), enlève les blancs, les « euh » et les ratés, écrit les `plans` dans `travail/montage.json` |
+| `python3 "$EDITEUR/outils/ou.py" travail/montage.json "faire les reps"` | Donne le moment exact (sur la vidéo finale) où une phrase est dite, pour poser un b-roll, un texte ou un zoom. `--tout` : tout le texte avec ses temps |
 | `python3 "$EDITEUR/outils/planche.py" b-roll/` | Fait une planche d'images par vidéo (`travail/planches/`) pour que Claude voie ce qu'il y a dedans |
 | `python3 "$EDITEUR/outils/rendu.py" travail/montage.json` | Fabrique la vidéo. `--apercu` : version rapide 540x960 pour vérifier ; `--image 3.5` : une seule image PNG à 3,5 s |
 | `python3 "$EDITEUR/outils/instagram.py" <lien>` | Télécharge un reel (yt-dlp) dans `references/` avec sa légende |

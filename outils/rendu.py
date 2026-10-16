@@ -79,7 +79,8 @@ def t_ass(t):
 
 def nettoie(txt, maj):
     txt = txt.replace("{", "(").replace("}", ")").replace("\n", " ")
-    return txt.upper() if maj else txt
+    txt = txt.upper() if maj else txt
+    return re.sub(r" ([?!:;»])", r"\\h\1", txt).replace("« ", "«\\h")   # pas de « ? » seul en début de ligne
 
 
 def blocs_sous_titres(projet, plans_t, n_max):
@@ -178,8 +179,12 @@ def rendre(montage_path, apercu=False, image=None):
     projet = dossier_projet(montage_path)
     m = json.loads(montage_path.read_text(encoding="utf-8"))
     k = kit(m.get("da", "auto"), projet)
+    for section, valeurs in (m.get("ajustements") or {}).items():   # réglages de DA pour CETTE vidéo seulement
+        if isinstance(valeurs, dict) and isinstance(k.get(section), dict):
+            k[section].update(valeurs)
     travail = projet / "travail"
-    cache = travail / "cache"
+    # cache commun à toutes les vidéos de l'élève : un rush déjà préparé n'est jamais refait
+    cache = DOSSIER_ELEVE / ".cache" if DOSSIER_ELEVE.exists() else travail / "cache"
     cache.mkdir(parents=True, exist_ok=True)
     if not m.get("plans"):
         sys.exit("montage.json n'a aucun plan.")
@@ -233,13 +238,12 @@ def rendre(montage_path, apercu=False, image=None):
     mu = m.get("musique") if image is None else None
     if mu and mu.get("source"):
         cmd += ["-stream_loop", "-1", "-ss", f"{mu.get('debut', 0):.3f}", "-i", str((projet / mu["source"]).resolve())]
-        niveau = float(mu.get("niveau_db", k["musique"]["niveau_db"]))
-        filt.append(f"[{n_in}:a]aresample=48000,aformat=channel_layouts=stereo,volume={niveau}dB,atrim=0:{total:.3f}[mus]")
-        if niveau < -6:
-            filt.append("[0:a]asplit=2[voix][sc];[mus][sc]sidechaincompress=threshold=0.03:ratio=4:attack=30:release=400[musd]")
-            filt.append("[voix][musd]amix=inputs=2:duration=first:normalize=0[mix]")
-        else:
-            filt.append("[0:a][mus]amix=inputs=2:duration=first:normalize=0[mix]")
+        niveau = float(mu.get("niveau_db", k["musique"]["niveau_db"]))   # en LU sous la voix (0 = musique au premier plan)
+        fin_f = max(0.0, total - 1.2)
+        filt.append(f"[{n_in}:a]aresample=48000,aformat=channel_layouts=stereo,atrim=0:{total:.3f},"
+                    f"loudnorm=I={-16 + niveau:.1f}:TP=-2:LRA=11,afade=t=in:d=0.02,afade=t=out:st={fin_f:.3f}:d=1.2[mus]")
+        filt.append("[0:a]loudnorm=I=-16:TP=-2:LRA=11[voix]")
+        filt.append("[voix][mus]amix=inputs=2:duration=first:normalize=0[mix]")
         alab = "[mix]"
     else:
         alab = "[0:a]"

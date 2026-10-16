@@ -39,7 +39,7 @@ Durée cible pour un débutant : 30 à 60 secondes (checklist du cours), 30 seco
 
 ## Musique et son
 - La voix seule, du début à la fin. Pas de musique par défaut.
-- Si l'élève veut une musique et qu'il a mis un fichier dans `musique/` : `niveau_db: -22`. Jamais de musique générée. Sinon dis-lui : « Si tu veux un son, ajoute-le dans Instagram au moment de poster, prends un son tendance. »
+- Si l'élève veut une musique et qu'il a mis un fichier dans `musique/` : `niveau_db: -12`. Jamais de musique générée. Sinon dis-lui : « Si tu veux un son, ajoute-le dans Instagram au moment de poster, prends un son tendance. »
 
 ## Remplir garde.json / montage.json
 `garde.json` : `"style": "yap"` (tout blanc de plus de 0,25 s saute). L'ordre des passages est l'ordre de la vidéo : le hook refait de la fin passe en premier.

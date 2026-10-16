@@ -40,7 +40,7 @@ Vertical 1080x1920, pour Reels et TikTok.
 - Sans voix : les clips sont les `plans` eux-mêmes, `son: false`. Lance `planche.py` pour choisir.
 
 ## Musique et son
-- Avec voix : pas de musique par défaut. Si l'élève en a mis une dans `musique/`, `niveau_db: -22`.
+- Avec voix : pas de musique par défaut. Si l'élève en a mis une dans `musique/`, `niveau_db: -12`.
 - Sans voix : musique toujours, au premier plan, `niveau_db: 0`. Choisis le moment du drop avec l'élève avant de couper.
 - Jamais de musique générée. Si `musique/` est vide, pas de champ `musique`, et dis-lui : « Ajoute un son tendance dans Instagram au moment de poster. » Sans voix, préviens-le que les coupes ne tomberont pas sur le rythme du son qu'il choisira.
 

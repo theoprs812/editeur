@@ -40,7 +40,7 @@ Le prompt d'arc du cours vise 60 à 90 secondes.
 - Lance `planche.py b-roll/` pour voir les clips avant de les placer.
 
 ## Musique et son
-- Une musique sous la voix (le cours 4.13 dit de monter sur la musique), choisie par l'élève dans `musique/`, `niveau_db: -22`.
+- Une musique sous la voix (le cours 4.13 dit de monter sur la musique), choisie par l'élève dans `musique/`, `niveau_db: -12`.
 - Jamais de musique générée. Si `musique/` est vide, pas de champ `musique`, et dis-lui : « Au moment de poster, ajoute un son tendance dans Instagram, mets-le bas pour qu'on entende ta voix. »
 
 ## Remplir garde.json / montage.json
@@ -59,7 +59,7 @@ Après `couper.py`, complète `montage.json` :
  ],
  "hook": {"texte": "Mon client a refusé mon reel", "de": 0, "a": 3.0},
  "sous_titres": true, "textes": [],
- "musique": {"source": "musique/lofi.mp3", "debut": 0, "niveau_db": -22}, "zoom": []}
+ "musique": {"source": "musique/lofi.mp3", "debut": 0, "niveau_db": -12}, "zoom": []}
 ```
 
 ## À éviter

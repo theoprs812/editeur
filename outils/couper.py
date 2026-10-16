@@ -65,31 +65,42 @@ def retirer_silences(morceaux, sil, blanc_max, marge):
 
 def couper(ws, debut, fin, blanc_max, marge):
     ws = [m for m in ws if m["s"] >= debut - 0.05 and m["e"] <= fin + 0.05]
-    garde, retire = [], []
+    garde, retire, trous = [], [], []
     for i, m in enumerate(ws):
         t = norm(m["w"])
+        raison = None
         if t in FILLERS:
-            retire.append(f"« {m['w']} » à {m['s']:.2f}")
-            continue
-        if i + 1 < len(ws) and t and t == norm(ws[i + 1]["w"]) and len(t) > 1 and ws[i + 1]["s"] - m["e"] < 0.6:
-            retire.append(f"mot répété « {m['w']} » à {m['s']:.2f}")
+            raison = f"« {m['w']} » à {m['s']:.2f}"
+        elif i + 1 < len(ws) and t and t == norm(ws[i + 1]["w"]) and ws[i + 1]["s"] - m["e"] < 0.6:
+            raison = f"mot répété « {m['w']} » à {m['s']:.2f}"
+        if raison:
+            retire.append(raison)
+            trous.append((m["s"], m["e"]))
+            if garde:
+                garde[-1] = dict(garde[-1], coupe_apres=True)
             continue
         garde.append(m)
     plans, cur = [], None
     for m in garde:
         if cur and m["s"] - cur["e"] <= blanc_max and not cur.get("coupe_apres"):
             cur["e"] = m["e"]
+            cur["coupe_apres"] = m.get("coupe_apres")
         else:
             if cur:
                 plans.append(cur)
-            cur = {"s": m["s"], "e": m["e"]}
+            cur = {"s": m["s"], "e": m["e"], "coupe_apres": m.get("coupe_apres")}
     if cur:
         plans.append(cur)
-    # marges : un peu d'air avant le premier mot et après le dernier, sans manger le mot voisin
+    # marges : un peu d'air avant le premier mot et après le dernier, sans manger le mot voisin ni un mot retiré
     out = []
-    for i, p in enumerate(plans):
+    for p in plans:
         a = max(debut, p["s"] - marge)
         b = min(fin, p["e"] + marge * 1.5)
+        for t0, t1 in trous:
+            if t1 <= p["s"] + 0.01 and t1 > a:
+                a = t1
+            if t0 >= p["e"] - 0.01 and t0 < b:
+                b = t0
         if out and a < out[-1][1]:
             a = out[-1][1]
         if b - a > 0.12:

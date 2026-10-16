@@ -39,7 +39,7 @@ Durée : celle du script. Le cours donne 130 mots pour 45 secondes, 150 pour 60.
 
 ## Musique et son
 - La voix d'abord. Pas de musique par défaut.
-- Si l'élève a choisi un fichier dans `musique/` : `niveau_db: -22`. Jamais de musique générée. Sinon dis-lui : « Tu peux ajouter un son tendance dans Instagram quand tu postes, tout bas sous ta voix. »
+- Si l'élève a choisi un fichier dans `musique/` : `niveau_db: -12`. Jamais de musique générée. Sinon dis-lui : « Tu peux ajouter un son tendance dans Instagram quand tu postes, tout bas sous ta voix. »
 
 ## Remplir garde.json / montage.json
 `garde.json` : `"style": "yap"` (tout blanc de plus de 0,25 s saute), passages dans l'ordre du script.
