@@ -201,7 +201,9 @@ def hook_instagram(texte, hk, fichier_police, largeur_max, out):
     if hk.get("majuscules"):
         texte = texte.upper()
     texte = re.sub(r" ([?!:;»])", "\u00a0\\1", texte).replace("« ", "«\u00a0")   # jamais un « ? » seul en début de ligne
-    pad_x, pad_y, rayon = em * 0.36, em * 0.07, em * hk.get("arrondi", 0.22)
+    arr = float(hk.get("arrondi", 0.22))
+    pad_x, pad_y = em * 0.36, em * 0.07
+    rayon = arr * X if arr > 1 else em * arr   # arrondi > 1 : en pixels ; sinon en fraction de la taille
     haut_ligne = em * 1.2
     utile = largeur_max * X - 2 * pad_x
     lignes = []
@@ -363,8 +365,9 @@ def rendre(montage_path, apercu=False, image=None, sans_textes=False, sortie=Non
         de, a_ = float(h.get("de", 0)), min(total, float(h.get("a", 3)))
         y0 = k["hook"].get("y", 300)
         cmd += ["-loop", "1", "-t", f"{a_ - de:.3f}", "-i", str(png)]
-        filt.append(f"[{n_in}:v]format=rgba,scale=w='trunc(iw*min(1,0.82+0.18*t/0.16)/2)*2':h=-2:eval=frame,"
-                    f"fade=t=in:st=0:d=0.08:alpha=1,setpts=PTS-STARTPTS+{de}/TB[hk]")
+        anim = "scale=w='trunc(iw*min(1,0.82+0.18*t/0.16)/2)*2':h=-2:eval=frame,fade=t=in:st=0:d=0.08:alpha=1," \
+            if k["hook"].get("animation", "pop") == "pop" else ""
+        filt.append(f"[{n_in}:v]format=rgba,{anim}setpts=PTS-STARTPTS+{de}/TB[hk]")
         filt.append(f"{vlab}[hk]overlay=x='(W-w)/2':y='{y0}+({hh}-h)/2':enable='between(t,{de},{a_})':eof_action=pass[bh]")
         vlab, n_in = "[bh]", n_in + 1
     fin_v = "null" if sans_textes else f"subtitles='{echappe_filtre(ass)}':fontsdir='{echappe_filtre(dossier_polices(travail, k))}'"

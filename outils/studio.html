@@ -211,7 +211,7 @@ function dessiner(force = false) {
     H.innerHTML = "";
     const s = document.createElement("span"); s.textContent = contenu; s.style.color = hk.couleur;
     const em = hk.taille * 0.70;
-    if (hk.avec_fond) { s.style.background = hk.fond; s.style.padding = `${px(em * 0.07)} ${px(em * 0.36)}`; s.style.borderRadius = px(em * (hk.arrondi ?? 0.22)); }
+    if (hk.avec_fond) { s.style.background = hk.fond; s.style.padding = `${px(em * 0.07)} ${px(em * 0.36)}`; const ar = hk.arrondi ?? 0.22; s.style.borderRadius = px(ar > 1 ? ar : em * ar); }
     else if (hk.contour) { s.className = "trait"; s.style.webkitTextStroke = `${px(hk.contour * 2)} ${hk.couleur_contour}`; }
     H.appendChild(s);
   }
