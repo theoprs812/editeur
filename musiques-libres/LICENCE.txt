@@ -1,0 +1,4 @@
+Morceaux libres fournis avec le Studio.
+
+youtube-libre/ : Kevin MacLeod (incompetech.com), licence Creative Commons BY 4.0.
+À créditer dans la description : « Musique : Kevin MacLeod (incompetech.com), licence CC BY 4.0 ».

@@ -18,7 +18,7 @@ if (-not (A ffmpeg)) { Winget "Gyan.FFmpeg" }; Ok "ffmpeg"
 if (-not (A yt-dlp)) { Winget "yt-dlp.yt-dlp" }; Ok "yt-dlp"
 $Py = if (A py) { "py" } else { "python" }
 Etape "2/4 La transcription (faster-whisper, le modèle se télécharge à la première vidéo)"
-& $Py -m pip install --quiet --upgrade faster-whisper pillow pycapcut | Out-Null; Ok "faster-whisper + Pillow + pycapcut"
+& $Py -m pip install --quiet --upgrade faster-whisper pillow pycapcut gdown | Out-Null; Ok "faster-whisper + Pillow + pycapcut + gdown"
 
 Etape "3/4 Ton dossier Editeur"
 foreach ($d in "ma-da\polices","references","musiques","videos","b-roll\entrainement","b-roll\lifestyle","b-roll\podcast","b-roll\bureau") { New-Item -ItemType Directory -Force -Path (Join-Path $Eleve $d) | Out-Null }

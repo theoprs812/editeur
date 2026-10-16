@@ -16,3 +16,5 @@ if [[ "$avant" != "$apres" ]]; then
 else
   [[ "$1" == "--silencieux" ]] || echo "Le studio est déjà à jour."
 fi
+# la banque de musiques : seulement les nouveaux morceaux
+python3 "$RACINE/outils/musiques.py" --sync --silencieux >/dev/null 2>&1 &
