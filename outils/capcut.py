@@ -66,11 +66,9 @@ def envoyer(montage_path, ouvrir=False):
     W, H = rendu.W, rendu.H
     plans_t, total = rendu.plans_temps(m)
 
-    nom = f"Editeur - {projet.name}"
-    n = 2
-    while (racine / nom).exists():
-        nom = f"Editeur - {projet.name} v{n}"
-        n += 1
+    sortie = Path(m.get("sortie", "")).stem
+    nom = f"Editeur - {sortie or projet.name}"
+    remplacer(racine, nom)   # un nouvel envoi de la même vidéo remplace l'ancien projet
     dossier = cc.DraftFolder(str(racine))
     script = dossier.create_draft(nom, W, H, FPS)
     try:
@@ -277,6 +275,18 @@ def aligner_version(d, racine):
             j = json.loads(f.read_text(encoding="utf-8"))
             j.update(v)
             f.write_text(json.dumps(j, ensure_ascii=False), encoding="utf-8")
+
+
+def remplacer(racine, nom):
+    """Supprime l'ancien projet « Editeur - … » du même nom (seulement ceux créés par le Studio) et sa ligne dans la liste."""
+    if not nom.startswith("Editeur - ") or not (racine / nom).exists():
+        return
+    shutil.rmtree(racine / nom, ignore_errors=True)
+    racine_p = racine / "root_meta_info.json"
+    if racine_p.exists():
+        r = json.loads(racine_p.read_text(encoding="utf-8"))
+        r["all_draft_store"] = [d for d in r.get("all_draft_store", []) if d.get("draft_name") != nom]
+        racine_p.write_text(json.dumps(r, ensure_ascii=False), encoding="utf-8")
 
 
 def inscrire(racine, nom, total):
