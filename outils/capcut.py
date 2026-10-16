@@ -173,7 +173,7 @@ def construire(cc, script, projet, m, k, W, H, plans_t, total, dossier_media):
             debut = round(b[0]["s"] * US)
             seg = cc.TextSegment(texte, cc.trange(debut, max(round(fin * US) - debut, 100_000)),
                                  font=police_capcut(cc, fam),
-                                 style=cc.TextStyle(size=st.get("taille", 80) / 9, bold=True, color=rgb(st.get("couleur")), align=1,
+                                 style=cc.TextStyle(size=st.get("taille", 80) / 6.5, bold=True, color=rgb(st.get("couleur")), align=1,
                                                     auto_wrapping=True, max_line_width=0.8),
                                  border=cc.TextBorder(color=rgb(st.get("couleur_contour")), width=min(100, st.get("contour", 6) * 7)) if st.get("contour") else None,
                                  clip_settings=cc.ClipSettings(transform_y=-(st.get("y", 1330) - H / 2) / (H / 2)))
@@ -189,7 +189,7 @@ def construire(cc, script, projet, m, k, W, H, plans_t, total, dossier_media):
         lignes = max(1, round(len(texte) / 24))
         cy = hk.get("y", 300) + lignes * hk.get("taille", 88) * 0.6
         seg = cc.TextSegment(texte, cc.trange(round(de * US), round((a - de) * US)), font=police_capcut(cc, fam),
-                             style=cc.TextStyle(size=hk.get("taille", 88) / 9, bold=True, color=rgb(hk.get("couleur")), align=1,
+                             style=cc.TextStyle(size=hk.get("taille", 88) / 8, bold=True, color=rgb(hk.get("couleur")), align=1,
                                                 auto_wrapping=True, max_line_width=0.78),
                              background=cc.TextBackground(color=hk.get("fond", "#FFFFFF"), round_radius=0.35, style=1) if hk.get("avec_fond") else None,
                              clip_settings=cc.ClipSettings(transform_y=-(cy - H / 2) / (H / 2)))
@@ -213,11 +213,39 @@ def construire(cc, script, projet, m, k, W, H, plans_t, total, dossier_media):
 
 
 
+def version_locale(racine):
+    """Les numéros de version du CapCut de l'élève, lus dans son projet le plus récent.
+    Sans ça, CapCut dit « créé avec une version plus récente » et refuse d'ouvrir."""
+    projets = sorted((p for p in racine.glob("*/draft_info.json") if not p.parent.name.startswith("Editeur - ")),
+                     key=lambda p: p.stat().st_mtime, reverse=True)
+    for p in projets[:5]:
+        try:
+            j = json.loads(p.read_text(encoding="utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            continue   # projet chiffré (versions récentes) : on essaie le suivant
+        if j.get("new_version") and j.get("platform"):
+            return {c: j[c] for c in ("version", "new_version", "platform", "last_modified_platform") if c in j}
+    return None
+
+
+def aligner_version(d, racine):
+    v = version_locale(racine)
+    if not v:
+        return
+    for nomf in ("draft_content.json", "draft_info.json"):
+        f = d / nomf
+        if f.exists():
+            j = json.loads(f.read_text(encoding="utf-8"))
+            j.update(v)
+            f.write_text(json.dumps(j, ensure_ascii=False), encoding="utf-8")
+
+
 def inscrire(racine, nom, total):
     """Complète la fiche du projet et l'ajoute à la liste des projets de CapCut (sauvegarde de la liste avant)."""
     d = racine / nom
     contenu = d / "draft_content.json"
     shutil.copy2(contenu, d / "draft_info.json")   # CapCut ordinateur lit draft_info.json, d'autres versions draft_content.json
+    aligner_version(d, racine)
     maintenant = int(time.time() * US)
     did = str(uuid.uuid4()).upper()
     meta_p = d / "draft_meta_info.json"
