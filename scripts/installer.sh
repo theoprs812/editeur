@@ -60,6 +60,8 @@ if a yt-dlp; then ok "yt-dlp"; brew upgrade yt-dlp >/dev/null 2>&1 || true; else
 
 # Pillow : dessine le texte du début façon Instagram (coins arrondis)
 python3 -c "import PIL" 2>/dev/null && ok "Pillow" || { python3 -m pip install --user --quiet pillow 2>/dev/null || brew install pillow; ok "Pillow"; }
+# pycapcut : envoyer le montage dans CapCut ordinateur
+python3 -c "import pycapcut" 2>/dev/null && ok "pycapcut" || { python3 -m pip install --user --quiet pycapcut 2>/dev/null && ok "pycapcut"; }
 
 # 3. Le dossier de l'élève -------------------------------------------------------
 etape "3/5 Ton dossier Editeur"

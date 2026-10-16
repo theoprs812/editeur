@@ -151,6 +151,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <button class="b" type="button" id="b-da">Garder pour toutes mes vidéos</button>
       </div>
       <button class="b go" type="button" id="b-fab">Fabriquer la vidéo</button>
+      <button class="b" type="button" id="b-capcut">Ouvrir dans CapCut pour retoucher</button>
       <div class="statut" id="statut" role="status"></div>
     </div>
   </aside>
@@ -375,6 +376,15 @@ $("b-fab").addEventListener("click", async () => {
   const b = $("b-fab"); b.disabled = true; setStatut("Je fabrique ta vidéo… (une minute environ)");
   try { await poster("/api/fabriquer", reglages()); suivre(); }
   catch (e) { setStatut("Ça n'a pas marché. Dis à Claude : « le studio ne marche pas ».", "ko"); b.disabled = false; }
+});
+$("b-capcut").addEventListener("click", async () => {
+  const b = $("b-capcut"); b.disabled = true; setStatut("J'envoie ton montage dans CapCut…");
+  try {
+    const j = await poster("/api/capcut", reglages());
+    if (j.ok) setStatut(`C'est dans CapCut : « ${j.nom} », en haut de tes projets. Retouche les coupes et les sous-titres, puis exporte depuis CapCut.`, "ok");
+    else setStatut(j.message, "ko");
+  } catch (e) { setStatut("Ça n'a pas marché. Dis à Claude : « l'envoi CapCut ne marche pas ».", "ko"); }
+  b.disabled = false;
 });
 async function suivre() {
   const r = await fetch("/api/etat"), j = await r.json();

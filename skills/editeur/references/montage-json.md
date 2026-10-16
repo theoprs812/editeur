@@ -56,6 +56,7 @@ Tous les temps sont en secondes. `debut` / `fin` = temps DANS le fichier source.
 | `python3 "$EDITEUR/outils/planche.py" b-roll/` | Fait une planche d'images par vidéo (`travail/planches/`) pour que Claude voie ce qu'il y a dedans |
 | `python3 "$EDITEUR/outils/rendu.py" travail/montage.json` | Fabrique la vidéo. `--apercu` : version rapide 540x960 pour vérifier ; `--image 3.5` : une seule image PNG à 3,5 s |
 | `python3 "$EDITEUR/outils/studio.py" "<dossier de la vidéo>"` | Ouvre le Studio (mini-éditeur visuel) dans le navigateur. À lancer en arrière-plan |
+| `python3 "$EDITEUR/outils/capcut.py" travail/montage.json --ouvrir` | Envoie le montage dans CapCut ordinateur (projet retouchable, une piste par élément). CapCut doit être fermé |
 | `python3 "$EDITEUR/outils/instagram.py" <lien>` | Télécharge un reel (yt-dlp) dans `references/` avec sa légende |
 
 ## garde.json (pour couper.py)

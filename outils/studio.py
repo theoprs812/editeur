@@ -242,6 +242,15 @@ def gestionnaire(session):
                         session.enregistrer({**data["reglages"], "portee": "video"})
                     png = session.image(data.get("t", 1.0))
                     self.json({"url": f"/media/image?f={png.name}&v={time.time()}"})
+                elif u.path == "/api/capcut":
+                    if data:
+                        session.enregistrer({**data, "portee": "video"})
+                    import capcut
+                    try:
+                        nom = capcut.envoyer(session.montage, ouvrir=True)
+                        self.json({"ok": True, "nom": nom})
+                    except SystemExit as e:
+                        self.json({"ok": False, "message": str(e)})
                 elif u.path == "/api/ouvrir":
                     import subprocess, platform
                     d = str(Path(ETAT["fichier"]).parent if ETAT["fichier"] else session.projet / "export")
