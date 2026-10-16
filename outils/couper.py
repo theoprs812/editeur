@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Coupe fine au mot : enlève les blancs, les « euh » et les mots répétés dans les passages gardés.
 
-    python3 couper.py travail/garde.json
+    python3 couper.py travail/garde.json [--montage travail/montage-v2.json]
 
 garde.json : {"style": "yap" | "normal", "passages": [{"source": "rushes/x.MOV", "debut": 12.1, "fin": 31.0}, ...]}
 Écrit (ou met à jour) les "plans" de travail/montage.json et affiche ce qui a été retiré.
@@ -130,6 +130,8 @@ def main():
             plans.append({"source": p["source"], "debut": a, "fin": b})
             apres += b - a
     m_path = projet / "travail" / "montage.json"
+    if "--montage" in sys.argv:   # une version à part : travail/montage-v2.json
+        m_path = Path(sys.argv[sys.argv.index("--montage") + 1]).resolve()
     m = json.loads(m_path.read_text(encoding="utf-8")) if m_path.exists() else {}
     m["plans"] = plans
     m.setdefault("format", g.get("style", "coupe-propre"))
