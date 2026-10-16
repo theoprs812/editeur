@@ -1,0 +1,7 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {"hooks": [{"type": "command", "command": "bash \"$HOME/.editeur/scripts/maj.sh\" --silencieux >/dev/null 2>&1 &", "timeout": 5}]}
+    ]
+  }
+}

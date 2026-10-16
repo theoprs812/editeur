@@ -1,0 +1,374 @@
+<title>L'Éditeur Project Orange</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout : une colonne de lecture, chaque étape = texte à gauche + fenêtre Claude illustrée à droite, empilés sur téléphone */
+:root {
+  --bg: #F6F6F3; --fg: #17181A; --muted: #62666D; --card: #FFFFFF; --line: #E2E1DC;
+  --accent: #FF6B1A; --accent-ink: #FFFFFF; --accent-soft: #FFE7D8; --code: #1D1E21; --code-fg: #F4F2EE;
+  --win: #FFFFFF; --win-bar: #EEEDE9; --bubble: #F1F0EC; --ok: #1F8A4C;
+  --f-display: "Bricolage Grotesque", "Arial Black", system-ui, sans-serif;
+  --f-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121315; --fg: #F2F1EE; --muted: #A2A5AB; --card: #1B1C1F; --line: #2C2D31;
+  --accent: #FF8A3D; --accent-ink: #1A0D04; --accent-soft: #3A2414; --code: #0B0B0C; --code-fg: #F4F2EE;
+  --win: #1E1F22; --win-bar: #26272B; --bubble: #2A2B2F; --ok: #4CC17D; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121315; --fg: #F2F1EE; --muted: #A2A5AB; --card: #1B1C1F; --line: #2C2D31;
+  --accent: #FF8A3D; --accent-ink: #1A0D04; --accent-soft: #3A2414; --code: #0B0B0C; --code-fg: #F4F2EE;
+  --win: #1E1F22; --win-bar: #26272B; --bubble: #2A2B2F; --ok: #4CC17D; color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 17px/1.6 var(--f-body); }
+.page { max-width: 1060px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 80px; display: grid; gap: 64px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.08; }
+p { margin: 0; }
+a { color: var(--accent); }
+.eyebrow { font: 600 13px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+
+/* En-tête */
+.hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 40px; align-items: center; }
+.hero h1 { font-size: clamp(40px, 6vw, 68px); font-weight: 800; letter-spacing: -0.02em; margin-top: 14px; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero .intro { margin-top: 18px; font-size: 19px; color: var(--muted); max-width: 34em; }
+.facts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+.fact { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 14px; font-size: 14px; font-weight: 600; }
+.reel { justify-self: center; width: min(250px, 100%); aspect-ratio: 9 / 16; border-radius: 26px; position: relative; overflow: hidden;
+  background: linear-gradient(160deg, #3A4A5C, #C9A27E 55%, #6B7F8E); box-shadow: 0 30px 60px -30px rgba(0,0,0,.45); }
+.reel .hook { position: absolute; top: 15%; left: 50%; transform: translateX(-50%); background: #FFFFFF; color: #000000;
+  font: 700 15px/1.25 var(--f-body); padding: 4px 9px; text-align: center; width: 78%; }
+.reel .sub { position: absolute; top: 68%; width: 100%; text-align: center; font: 800 19px/1 var(--f-body); color: #FFFFFF;
+  -webkit-text-stroke: 1px #000000; paint-order: stroke fill; }
+.reel .sub b { color: #FFD43B; }
+.reel .ui { position: absolute; right: 10px; bottom: 60px; display: grid; gap: 14px; }
+.reel .ui i { display: block; width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,.75); }
+.reel .cap { position: absolute; left: 12px; bottom: 16px; right: 50px; height: 8px; border-radius: 4px; background: rgba(255,255,255,.6); }
+.reel .tag { position: absolute; top: 10px; left: 10px; font: 600 11px/1 var(--f-body); color: #FFFFFF; background: rgba(0,0,0,.35); padding: 5px 8px; border-radius: 999px; }
+@media (prefers-reduced-motion: no-preference) { .reel .sub { animation: pop 1.8s ease-out infinite; } }
+@keyframes pop { 0% { transform: scale(.82); } 8% { transform: scale(1); } 100% { transform: scale(1); } }
+
+/* Ce qu'il faut avant de commencer */
+.need { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.need div { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; }
+.need h3 { font-size: 18px; font-weight: 600; }
+.need p { color: var(--muted); font-size: 15px; margin-top: 6px; }
+
+/* Les étapes */
+.steps-head h2 { font-size: clamp(30px, 4vw, 42px); font-weight: 800; }
+.steps-head p { color: var(--muted); margin-top: 10px; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 56px; counter-reset: etape; }
+.step { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 36px; align-items: start; counter-increment: etape; }
+.step .txt { display: grid; gap: 12px; }
+.step .num { font: 800 15px/1 var(--f-display); color: var(--accent-ink); background: var(--accent); width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; }
+.step .num::before { content: counter(etape); }
+.step h3 { font-size: 26px; font-weight: 800; letter-spacing: -0.01em; }
+.step p { color: var(--muted); }
+.step p strong { color: var(--fg); }
+.step .tip { font-size: 15px; background: var(--accent-soft); color: var(--fg); border-radius: 12px; padding: 10px 14px; }
+
+/* Le message à copier */
+.copy { background: var(--code); color: var(--code-fg); border-radius: 14px; padding: 14px 16px; display: grid; gap: 10px; }
+.os { display: flex; gap: 6px; }
+.os button { font: 600 13px var(--f-body); border: 1px solid #44464B; background: transparent; color: var(--code-fg); padding: 5px 12px; border-radius: 999px; cursor: pointer; }
+.os button[aria-pressed="true"] { background: var(--code-fg); color: var(--code); border-color: var(--code-fg); }
+.copy pre { margin: 0; white-space: pre-wrap; word-break: break-word; font: 14px/1.55 var(--f-mono); }
+.copy .do { justify-self: start; font: 700 14px var(--f-body); background: var(--accent); color: var(--accent-ink); border: 0; padding: 9px 16px; border-radius: 10px; cursor: pointer; }
+button:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* La fenêtre Claude illustrée */
+.win { margin: 0; background: var(--win); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: 0 24px 50px -32px rgba(0,0,0,.35); min-width: 0; }
+.win .bar { background: var(--win-bar); display: flex; align-items: center; gap: 7px; padding: 9px 12px; }
+.win .bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.win .tabs { margin-left: 14px; display: flex; gap: 4px; font: 600 12px var(--f-body); color: var(--muted); }
+.win .tabs span { padding: 3px 10px; border-radius: 6px; }
+.win .tabs .on { background: var(--win); color: var(--fg); box-shadow: 0 0 0 2px var(--accent); }
+.win .body { padding: 16px; display: grid; gap: 10px; font-size: 14px; line-height: 1.5; }
+.win .label { font: 600 11px/1 var(--f-body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); justify-self: end; padding: 0 16px 10px; }
+.me { justify-self: end; background: var(--accent); color: var(--accent-ink); border-radius: 14px 14px 4px 14px; padding: 8px 12px; max-width: 85%; }
+.cl { background: var(--bubble); border-radius: 14px 14px 14px 4px; padding: 10px 12px; max-width: 92%; }
+.cl .next { display: block; margin-top: 6px; font-weight: 700; }
+.perm { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; }
+.perm code { font: 12px var(--f-mono); color: var(--muted); word-break: break-all; }
+.perm .btns { display: flex; gap: 8px; }
+.perm .btns span { font: 600 12px var(--f-body); padding: 5px 12px; border-radius: 8px; border: 1px solid var(--line); }
+.perm .btns .yes { background: var(--fg); color: var(--bg); border-color: var(--fg); box-shadow: 0 0 0 3px var(--accent); }
+.term { background: #111214; color: #E9E7E2; font: 13px/1.6 var(--f-mono); padding: 14px; }
+.term .g { color: #57D08A; }
+.term .cur { display: inline-block; width: 8px; height: 15px; background: #E9E7E2; vertical-align: -3px; }
+.folder { display: grid; gap: 6px; font-size: 14px; }
+.folder div { display: flex; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 8px; }
+.folder div.sel { background: var(--accent-soft); font-weight: 700; }
+.folder svg { flex: none; }
+.drop { border: 2px dashed var(--accent); border-radius: 12px; padding: 14px; text-align: center; color: var(--muted); font-size: 14px; }
+.menu { font: 13px/1.7 var(--f-mono); }
+.site { display: grid; gap: 12px; }
+.site .plan { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.site .plan.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.site .plan b { font-size: 15px; }
+.site .btn { font: 700 13px var(--f-body); background: var(--fg); color: var(--bg); padding: 7px 12px; border-radius: 8px; white-space: nowrap; }
+
+/* Phrases à connaître */
+.say h2, .faq h2, .film h2 { font-size: clamp(28px, 3.6vw, 38px); font-weight: 800; }
+.phrases { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+.phrases div { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; gap: 4px; }
+.phrases q { font-weight: 700; quotes: "« " " »"; }
+.phrases span { color: var(--muted); font-size: 15px; }
+
+.film ul { margin: 18px 0 0; padding-left: 20px; display: grid; gap: 8px; color: var(--muted); }
+.film li strong { color: var(--fg); }
+
+.faq dl { margin: 18px 0 0; display: grid; gap: 18px; }
+.faq dt { font-weight: 700; }
+.faq dd { margin: 4px 0 0; color: var(--muted); }
+.foot { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); padding-top: 20px; }
+
+@media (max-width: 760px) {
+  body { font-size: 16px; }
+  .page { padding-inline: 16px; gap: 48px; }
+  .hero, .step { grid-template-columns: minmax(0, 1fr); }
+  .reel { width: min(210px, 70%); }
+  .need, .phrases { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+
+<main class="page">
+
+  <header class="hero">
+    <div>
+      <span class="eyebrow">Project Orange · L'Éditeur</span>
+      <h1>Tu filmes. <em>Claude monte.</em></h1>
+      <p class="intro">L'Éditeur coupe tes blancs et tes ratés, garde ta meilleure prise, ajoute le texte du début, les sous-titres, ton b-roll et ta musique, dans ton style. Tout se passe dans Claude, sur ton ordi. Ce tuto t'installe tout en 15 minutes.</p>
+      <div class="facts">
+        <span class="fact">Mac et Windows</span>
+        <span class="fact">8 étapes</span>
+        <span class="fact">Aucune ligne de code</span>
+      </div>
+    </div>
+    <div class="reel" role="img" aria-label="Exemple de reel monté par l'Éditeur : texte du début en haut, sous-titres animés au milieu">
+      <span class="tag">Monté par l'Éditeur</span>
+      <div class="hook">J'ai arrêté de poster tous les jours</div>
+      <div class="sub">et <b>franchement</b></div>
+      <div class="ui"><i></i><i></i><i></i></div>
+      <div class="cap"></div>
+    </div>
+  </header>
+
+  <section class="need" aria-label="Ce qu'il te faut">
+    <div><h3>Un ordinateur</h3><p>Un Mac ou un PC Windows. Ton téléphone sert à filmer, le montage se fait sur l'ordi.</p></div>
+    <div><h3>Un compte Claude payant</h3><p>L'abonnement Pro au minimum. L'Éditeur tourne sur ton compte Claude.</p></div>
+    <div><h3>15 minutes</h3><p>Une seule fois. Après, tu ouvres Claude et tu écris « salut l'éditeur ».</p></div>
+  </section>
+
+  <section class="steps-head">
+    <span class="eyebrow">L'installation</span>
+    <h2>Suis les étapes dans l'ordre</h2>
+    <p>Une étape à la fois. Si quelque chose bloque, écris-le à Claude avec tes mots : il corrige tout seul.</p>
+  </section>
+
+  <ol class="steps">
+
+    <li class="step">
+      <div class="txt">
+        <span class="num" aria-hidden="true"></span>
+        <h3>Prends l'abonnement Claude Pro</h3>
+        <p>Va sur <a href="https://claude.ai" target="_blank" rel="noopener">claude.ai</a>, crée ton compte (ou connecte-toi), puis passe à l'abonnement <strong>Pro</strong> depuis les réglages de ton compte.</p>
+        <p class="tip">Déjà abonné à Pro ou Max ? Passe direct à l'étape 2.</p>
+      </div>
+      <figure class="win" aria-label="Illustration : le choix de l'abonnement Pro sur claude.ai">
+        <div class="bar"><i></i><i></i><i></i></div>
+        <div class="body site">
+          <div class="plan"><span><b>Gratuit</b><br><small>Pour discuter</small></span></div>
+          <div class="plan sel"><span><b>Pro</b><br><small>Claude Code inclus</small></span><span class="btn">Choisir Pro</span></div>
+          <div class="plan"><span><b>Max</b><br><small>Pour monter beaucoup de vidéos</small></span></div>
+        </div>
+        <figcaption class="label">Illustration</figcaption>
+      </figure>
+    </li>
+
+    <li class="step">
+      <div class="txt">
+        <span class="num" aria-hidden="true"></span>
+        <h3>Installe l'app Claude</h3>
+        <p>Télécharge l'app sur <a href="https://claude.ai/download" target="_blank" rel="noopener">claude.ai/download</a>. Sur Mac, glisse l'icône dans <strong>Applications</strong>. Sur Windows, ouvre le fichier téléchargé. Lance l'app et connecte-toi avec le même compte.</p>
+      </div>
+      <figure class="win" aria-label="Illustration : l'app Claude ouverte">
+        <div class="bar"><i></i><i></i><i></i><div class="tabs"><span class="on">Chat</span><span>Code</span></div></div>
+        <div class="body"><div class="cl">Bonjour Léa, comment je peux t'aider ?</div></div>
+        <figcaption class="label">Illustration</figcaption>
+      </figure>
+    </li>
+
+    <li class="step">
+      <div class="txt">
+        <span class="num" aria-hidden="true"></span>
+        <h3>Ouvre l'onglet Code</h3>
+        <p>En haut de l'app, clique sur <strong>Code</strong>. Claude te demande un dossier de travail : choisis <strong>ton dossier personnel</strong> (sur Mac, celui avec ta petite maison et ton prénom ; sur Windows, <strong>C:\Users\ton-prénom</strong>).</p>
+      </div>
+      <figure class="win" aria-label="Illustration : l'onglet Code et le choix du dossier personnel">
+        <div class="bar"><i></i><i></i><i></i><div class="tabs"><span>Chat</span><span class="on">Code</span></div></div>
+        <div class="body folder">
+          <div><svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true"><path d="M0 2a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2z" fill="var(--muted)"/></svg>Bureau</div>
+          <div><svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true"><path d="M0 2a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2z" fill="var(--muted)"/></svg>Documents</div>
+          <div class="sel"><svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true"><path d="M9 0 18 7h-2.5v7h-4V9.5h-5V14h-4V7H0z" fill="var(--accent)"/></svg>lea (ton dossier personnel)</div>
+        </div>
+        <figcaption class="label">Illustration</figcaption>
+      </figure>
+    </li>
+
+    <li class="step">
+      <div class="txt">
+        <span class="num" aria-hidden="true"></span>
+        <h3>Colle le message d'installation</h3>
+        <p>Choisis ton ordi, copie le message, colle-le dans Claude et envoie. Claude installe tout lui-même. À chaque fois qu'il demande la permission, clique sur <strong>Autoriser</strong>.</p>
+        <div class="copy">
+          <div class="os" role="group" aria-label="Ton ordinateur">
+            <button type="button" id="os-mac" aria-pressed="true">Mac</button>
+            <button type="button" id="os-win" aria-pressed="false">Windows</button>
+          </div>
+          <pre id="prompt"></pre>
+          <button type="button" class="do" id="copier">Copier le message</button>
+        </div>
+      </div>
+      <figure class="win" aria-label="Illustration : Claude demande la permission de lancer l'installation">
+        <div class="bar"><i></i><i></i><i></i><div class="tabs"><span>Chat</span><span class="on">Code</span></div></div>
+        <div class="body">
+          <div class="me">Installe l'Éditeur Project Orange…</div>
+          <div class="cl">Je télécharge l'Éditeur et je lance son installation.</div>
+          <div class="perm"><code>bash ~/.editeur/scripts/installer.sh</code><div class="btns"><span class="yes">Autoriser</span><span>Refuser</span></div></div>
+        </div>
+        <figcaption class="label">Illustration</figcaption>
+      </figure>
+    </li>
+
+    <li class="step">
+      <div class="txt">
+        <span class="num" aria-hidden="true"></span>
+        <h3>Sur Mac : tape ton mot de passe</h3>
+        <p>Une fenêtre noire s'ouvre toute seule. Tape le mot de passe de ton Mac (celui pour l'allumer) et appuie sur <strong>Entrée</strong>. Rien ne s'affiche pendant que tu tapes : c'est normal.</p>
+        <p class="tip">Quand la fenêtre écrit « C'est fini », ferme-la et retourne dans Claude. Il continue tout seul (le dernier téléchargement prend quelques minutes).</p>
+      </div>
+      <figure class="win" aria-label="Illustration : la fenêtre Terminal qui demande le mot de passe">
+        <div class="bar"><i></i><i></i><i></i></div>
+        <div class="term">==&gt; Checking for sudo access<br>Password: <span class="cur"></span><br><br><span class="g">C'est fini. Tu peux fermer cette fenêtre.</span></div>
+        <figcaption class="label">Illustration</figcaption>
+      </figure>
+    </li>
+
+    <li class="step">
+      <div class="txt">
+        <span class="num" aria-hidden="true"></span>
+        <h3>Rouvre Claude dans ton dossier Editeur</h3>
+        <p>Quand Claude écrit <strong>C'EST INSTALLÉ</strong> : quitte complètement l'app (Mac : <strong>Cmd + Q</strong>), rouvre-la, va dans <strong>Code</strong> et choisis le nouveau dossier <strong>Editeur</strong>, dans ton dossier personnel. Puis écris :</p>
+        <p class="tip"><strong>salut l'éditeur</strong></p>
+      </div>
+      <figure class="win" aria-label="Illustration : l'Éditeur dit bonjour">
+        <div class="bar"><i></i><i></i><i></i><div class="tabs"><span>Chat</span><span class="on">Code · Editeur</span></div></div>
+        <div class="body">
+          <div class="me">salut l'éditeur</div>
+          <div class="cl">Salut ! Je suis ton Éditeur. Tu filmes, je monte : je coupe les blancs et les ratés, j'ajoute le texte du début, les sous-titres, tes plans et ta musique.<span class="next">👉 À toi : envoie-moi le lien d'un de tes reels dont tu aimes le look, ou écris passe.</span></div>
+        </div>
+        <figcaption class="label">Illustration</figcaption>
+      </figure>
+    </li>
+
+    <li class="step">
+      <div class="txt">
+        <span class="num" aria-hidden="true"></span>
+        <h3>Donne-lui ton style</h3>
+        <p>Colle le lien Instagram d'un reel dont tu aimes le look (le tien ou un autre). L'Éditeur le télécharge, lit la police, les couleurs et la place des sous-titres, et te fabrique ton <strong>Template 1</strong>. Il te montre l'original à côté de sa copie : tu dis ok, ou ce que tu changes.</p>
+        <p class="tip">Pas de reel sous la main ? Écris « passe » : tu démarres avec le style classique, tu le changes quand tu veux.</p>
+      </div>
+      <figure class="win" aria-label="Illustration : l'Éditeur présente le Template 1">
+        <div class="bar"><i></i><i></i><i></i><div class="tabs"><span>Chat</span><span class="on">Code · Editeur</span></div></div>
+        <div class="body">
+          <div class="me">instagram.com/reel/…</div>
+          <div class="cl">Voilà ton Template 1, recopié de ton reel : texte du début blanc sur orange, sous-titres blancs, le mot dit en orange.<span class="next">👉 À toi : écris ok, ou dis-moi ce que tu changes.</span></div>
+        </div>
+        <figcaption class="label">Illustration</figcaption>
+      </figure>
+    </li>
+
+    <li class="step">
+      <div class="txt">
+        <span class="num" aria-hidden="true"></span>
+        <h3>Ta première vidéo</h3>
+        <p>L'Éditeur ouvre un dossier <strong>rushes</strong> : glisses-y ce que tu as filmé et écris « c'est bon ». Tes plans d'illustration vont dans <strong>b-roll</strong>, à côté, en vrac. Il te propose un format, tu choisis, il te montre son plan, tu valides, il monte. Ta vidéo arrive dans <strong>export</strong>.</p>
+      </div>
+      <figure class="win" aria-label="Illustration : le menu des formats">
+        <div class="bar"><i></i><i></i><i></i><div class="tabs"><span>Chat</span><span class="on">Code · Editeur</span></div></div>
+        <div class="body">
+          <div class="drop">IMG_2204.MOV · IMG_2205.MOV</div>
+          <div class="cl menu">Qu'est-ce qu'on fait ?<br>1. Yap<br>2. Talking head<br>3. Vlog<br>4. One shot<br>5. 10 shots<br>6. Coupe propre<span class="next">👉 À toi : réponds avec un chiffre.</span></div>
+        </div>
+        <figcaption class="label">Illustration</figcaption>
+      </figure>
+    </li>
+  </ol>
+
+  <section class="say">
+    <span class="eyebrow">Au quotidien</span>
+    <h2>Les phrases à connaître</h2>
+    <div class="phrases">
+      <div><q>fais-moi un yap</q><span>Ou vlog, one shot, 10 shots, talking head, coupe propre.</span></div>
+      <div><q>coupe juste les blancs</q><span>Le montage le plus simple, avec sous-titres.</span></div>
+      <div><q>copie le style de ce reel</q><span>Avec un lien : il te crée un nouveau template.</span></div>
+      <div><q>intègre ce reel dans ma vidéo</q><span>Avec un lien : il le pose en fenêtre ou en plein écran.</span></div>
+      <div><q>change le texte du début</q><span>Ou « plus gros », « en jaune », « enlève la phrase sur… ».</span></div>
+      <div><q>nouvelle vidéo</q><span>Il te prépare un dossier propre pour la suivante.</span></div>
+      <div><q>mets à jour l'éditeur</q><span>Il récupère la dernière version (ça se fait aussi tout seul).</span></div>
+      <div><q>ça marche pas</q><span>Il cherche ce qui bloque et le répare.</span></div>
+    </div>
+  </section>
+
+  <section class="film">
+    <span class="eyebrow">Avant d'appuyer sur REC</span>
+    <h2>Filmer pour l'Éditeur</h2>
+    <ul>
+      <li><strong>Téléphone à la verticale</strong>, à hauteur des yeux.</li>
+      <li><strong>Tu t'es trompé ? Reprends la phrase depuis le début</strong>, sans couper : l'Éditeur garde la dernière prise.</li>
+      <li><strong>Pas de musique pendant que tu filmes.</strong> Tu la mets dans le dossier musique, ou tu l'ajoutes dans Instagram au moment de poster.</li>
+      <li><strong>Un micro, même celui des écouteurs</strong>, fait plus pour ta vidéo que la plus belle caméra.</li>
+      <li><strong>Filme tes b-roll en plans de 3 à 5 secondes</strong> : l'Éditeur choisit le meilleur morceau.</li>
+    </ul>
+  </section>
+
+  <section class="faq">
+    <span class="eyebrow">Questions</span>
+    <h2>Ce qu'on te demande souvent</h2>
+    <dl>
+      <div><dt>Mes vidéos partent sur internet ?</dt><dd>Non. Tes fichiers restent sur ton ordi, la transcription se fait sur ton ordi. Claude lit le texte de ce que tu dis et regarde quelques images pour décider des coupes.</dd></div>
+      <div><dt>Ça coûte combien ?</dt><dd>Rien de plus que ton abonnement Claude. Chaque montage utilise un peu de ton quota Claude : si tu montes beaucoup de vidéos par jour, l'abonnement Max te laisse plus de marge.</dd></div>
+      <div><dt>Combien de temps pour une vidéo ?</dt><dd>Quelques minutes pour un reel de 30 à 60 secondes, dont l'essentiel à répondre aux questions de l'Éditeur.</dd></div>
+      <div><dt>Et mes longues vidéos (podcast, live) ?</dt><dd>Le découpage d'un long format en plusieurs reels arrive dans la prochaine version. Pour l'instant, l'Éditeur garde le meilleur passage de 30 à 60 secondes.</dd></div>
+      <div><dt>Je suis bloqué.</dt><dd>Écris à Claude ce qui se passe, avec tes mots. S'il n'y arrive pas, poste une capture d'écran dans #rendus-p90 sur Slack.</dd></div>
+    </dl>
+  </section>
+
+  <p class="foot">L'Éditeur Project Orange · version 0.1 · Théo Parisi</p>
+</main>
+
+<script>
+const PROMPTS = {
+  mac: "Installe l'Éditeur Project Orange.\n1. Télécharge https://github.com/theoprs812/editeur dans le dossier ~/.editeur (git clone ; s'il existe déjà, fais git pull).\n2. Lance : bash ~/.editeur/scripts/installer.sh\n3. Suis exactement ce qu'il affiche et explique-moi chaque étape en une phrase simple.",
+  win: "Installe l'Éditeur Project Orange.\n1. Si git manque, installe-le avec winget (Git.Git). Télécharge https://github.com/theoprs812/editeur dans le dossier %USERPROFILE%\\.editeur (git clone ; s'il existe déjà, fais git pull).\n2. Lance : powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.editeur\\scripts\\installer.ps1\"\n3. Suis exactement ce qu'il affiche et explique-moi chaque étape en une phrase simple."
+};
+const pre = document.getElementById("prompt");
+const boutons = { mac: document.getElementById("os-mac"), win: document.getElementById("os-win") };
+let os = /Windows/i.test(navigator.userAgent) ? "win" : "mac";
+function choisir(o) {
+  os = o;
+  pre.textContent = PROMPTS[o];
+  for (const k in boutons) boutons[k].setAttribute("aria-pressed", String(k === o));
+}
+boutons.mac.addEventListener("click", () => choisir("mac"));
+boutons.win.addEventListener("click", () => choisir("win"));
+choisir(os);
+const copier = document.getElementById("copier");
+copier.addEventListener("click", () => {
+  const ok = () => { copier.textContent = "Copié ✓"; setTimeout(() => (copier.textContent = "Copier le message"), 1800); };
+  const repli = () => { const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); copier.textContent = "Sélectionné : Cmd+C ou Ctrl+C"; };
+  try { navigator.clipboard.writeText(PROMPTS[os]).then(ok, repli); } catch (e) { repli(); }
+});
+</script>

@@ -1,0 +1,7 @@
+{
+  "name": "editeur",
+  "version": "0.1.0",
+  "description": "L'Éditeur de Project Orange : tu filmes, Claude monte. Coupe les blancs et les ratés, ajoute le texte du début, les sous-titres, ton b-roll et ta musique, dans ta DA. Formats : yap, talking head, vlog, one shot, 10 shots, coupe propre.",
+  "author": {"name": "Théo Parisi, Project Orange"},
+  "repository": "https://github.com/theoprs812/editeur"
+}

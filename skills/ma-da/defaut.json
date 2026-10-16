@@ -1,0 +1,65 @@
+{
+  "nom": "Template 0 (classique)",
+  "version": 1,
+  "source": "DA par défaut de l'Éditeur",
+  "police": {
+    "famille": "TikTok Sans",
+    "gras": true
+  },
+  "hook": {
+    "taille": 88,
+    "couleur": "#000000",
+    "fond": "#FFFFFF",
+    "avec_fond": true,
+    "contour": 0,
+    "couleur_contour": "#000000",
+    "y": 290,
+    "marge_cotes": 100,
+    "majuscules": false,
+    "animation": "pop"
+  },
+  "sous_titres": {
+    "taille": 80,
+    "couleur": "#FFFFFF",
+    "couleur_mot": null,
+    "contour": 6,
+    "couleur_contour": "#000000",
+    "ombre": 0,
+    "y": 1330,
+    "marge_cotes": 120,
+    "mots_par_bloc": 3,
+    "majuscules": false,
+    "animation": "pop",
+    "avec_fond": false,
+    "fond": "#000000"
+  },
+  "textes": {
+    "taille": 72,
+    "couleur": "#FFFFFF",
+    "contour": 4,
+    "couleur_contour": "#000000",
+    "avec_fond": false,
+    "fond": "#000000",
+    "marge_cotes": 110
+  },
+  "fenetre": {
+    "largeur": 860,
+    "y": 250,
+    "arrondi": 40,
+    "hauteur_max": 880
+  },
+  "coupes": {
+    "blanc_max_yap": 0.25,
+    "blanc_max_normal": 0.5,
+    "marge": 0.08
+  },
+  "musique": {
+    "niveau_db": -22
+  },
+  "safe_zone": {
+    "haut": 220,
+    "bas": 1460,
+    "droite": 960
+  },
+  "historique": []
+}
