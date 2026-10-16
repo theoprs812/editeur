@@ -1,4 +1,4 @@
-"""Outils partagés de l'Éditeur : chemins, ffmpeg, lecture des médias, DA."""
+"""Outils partagés du Studio : chemins, ffmpeg, lecture des médias, DA."""
 import json, os, platform, shutil, subprocess, sys
 from pathlib import Path
 
@@ -34,7 +34,7 @@ def outil(nom):
 def ffmpeg():
     p = outil("ffmpeg")
     if not p:
-        sys.exit("ffmpeg manque. Dis à Claude : « installe mon éditeur ».")
+        sys.exit("ffmpeg manque. Dis à Claude : « installe mon studio ».")
     return p
 
 

@@ -1,6 +1,6 @@
 ---
 name: ma-da
-description: La direction artistique (DA) de l'élève dans l'Éditeur : son template de texte du début, de sous-titres et de textes à l'écran, lu par chaque montage. Crée la DA classique, ou la recopie automatiquement depuis un reel que l'élève aime (lien Instagram ou fichier) en « Template 1, 2, 3… », montre un aperçu côte à côte, l'ajuste à ses retours. Se déclenche sur « mon style », « ma DA », « mes couleurs », « ma police », « fais-moi un template », « copie le style de ce reel », « change mes sous-titres », ou quand l'élève envoie un reel en disant qu'il aime son look. Charger d'abord la skill editeur.
+description: La direction artistique (DA) de l'élève dans le Studio : son template de texte du début, de sous-titres et de textes à l'écran, lu par chaque montage. Crée la DA classique, ou la recopie automatiquement depuis un reel que l'élève aime (lien Instagram ou fichier) en « Template 1, 2, 3… », montre un aperçu côte à côte, l'ajuste à ses retours. Se déclenche sur « mon style », « ma DA », « mes couleurs », « ma police », « fais-moi un template », « copie le style de ce reel », « change mes sous-titres », ou quand l'élève envoie un reel en disant qu'il aime son look. Charger d'abord la skill editeur.
 ---
 
 # Ma DA

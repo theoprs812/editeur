@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Le Studio : le mini-éditeur visuel de l'Éditeur, ouvert dans le navigateur de l'élève.
+"""La page de réglages du Studio, ouverte dans le navigateur de l'élève.
 
     python3 studio.py <dossier de la vidéo>        (ou travail/montage.json)
 

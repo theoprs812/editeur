@@ -7,7 +7,7 @@ Le projet « Editeur - <nom de la vidéo> » apparaît dans l'accueil de CapCut 
 les coupes (rushes d'origine, pleine qualité), les b-roll, le texte du début, les sous-titres (un bloc par
 groupe de mots, modifiables un par un) et la musique. L'élève retouche une coupe, corrige un sous-titre, exporte.
 CapCut doit être FERMÉ pendant l'envoi (il réécrit sa liste de projets en quittant).
-Basé sur pycapcut (installé par l'éditeur).
+Basé sur pycapcut (installé par le studio).
 """
 import json, os, platform, re, shutil, subprocess, sys, time, uuid
 from pathlib import Path
@@ -55,7 +55,7 @@ def envoyer(montage_path, ouvrir=False):
     try:
         import pycapcut as cc
     except ImportError:
-        sys.exit("pycapcut manque. Dis à Claude : « installe mon éditeur ».")
+        sys.exit("pycapcut manque. Dis à Claude : « installe mon studio ».")
     racine = dossier_capcut()
     if not racine.exists():
         sys.exit("CapCut n'est pas installé sur cet ordinateur (ou n'a jamais été ouvert). Installe-le depuis capcut.com, ouvre-le une fois, puis recommence.")
@@ -109,8 +109,21 @@ def lier_media(src, dossier_media):
     return str(dst)
 
 
+POLICES_TEXTES = {}   # id du texte CapCut → fichier de police (Instagram Sans, etc.)
+
+
+def police_locale(k, sec, dossier_media):
+    """Le fichier de la police d'un élément, relié dans le projet (CapCut ne lit que ~/Movies)."""
+    from commun import fichier_police, DOSSIER_ELEVE, POLICES
+    p = (k.get(sec) or {}).get("police") or k["police"]
+    f = fichier_police([DOSSIER_ELEVE / "ma-da" / "polices", POLICES], p.get("famille", ""), p.get("poids", 700))
+    return (lier_media(f, dossier_media), p.get("famille")) if f else None
+
+
 def construire(cc, script, projet, m, k, W, H, plans_t, total, dossier_media):
     media = lambda f: lier_media(f, dossier_media)
+    POLICES_TEXTES.clear()
+    pol_st, pol_hk = police_locale(k, "sous_titres", dossier_media), police_locale(k, "hook", dossier_media)
 
     # 1. Les coupes, sur la piste principale (rushes d'origine)
     script.add_track(cc.TrackType.video)
@@ -178,6 +191,8 @@ def construire(cc, script, projet, m, k, W, H, plans_t, total, dossier_media):
                                  border=cc.TextBorder(color=rgb(st.get("couleur_contour")), width=min(100, st.get("contour", 6) * 7)) if st.get("contour") else None,
                                  clip_settings=cc.ClipSettings(transform_y=-(st.get("y", 1330) - H / 2) / (H / 2)))
             script.add_segment(seg, "sous-titres")
+            if pol_st:
+                POLICES_TEXTES[seg.material_id] = pol_st
 
     # 4. Le texte du début
     h, hk = m.get("hook"), k["hook"]
@@ -194,6 +209,8 @@ def construire(cc, script, projet, m, k, W, H, plans_t, total, dossier_media):
                              background=cc.TextBackground(color=hk.get("fond", "#FFFFFF"), round_radius=0.35, style=1) if hk.get("avec_fond") else None,
                              clip_settings=cc.ClipSettings(transform_y=-(cy - H / 2) / (H / 2)))
         script.add_segment(seg, "texte du début")
+        if pol_hk:
+            POLICES_TEXTES[seg.material_id] = pol_hk
 
     # 5. La musique, calée sur la voix
     mu = m.get("musique")
@@ -211,6 +228,27 @@ def construire(cc, script, projet, m, k, W, H, plans_t, total, dossier_media):
                                            source_timerange=cc.trange(round(float(mu.get("debut", 0)) * US), round(d * US)),
                                            volume=round(min(1.0, 10 ** (gain / 20)), 3)), "musique")
 
+
+
+def poser_polices(contenu):
+    """Remplace la police par défaut de CapCut par la vraie (Instagram Sans…), comme une police système."""
+    if not POLICES_TEXTES:
+        return
+    j = json.loads(contenu.read_text(encoding="utf-8"))
+    for t in j.get("materials", {}).get("texts", []):
+        pol = POLICES_TEXTES.get(t.get("id"))
+        if not pol:
+            continue
+        chemin_f, titre = pol
+        t.update(font_path=chemin_f, font_title=titre, font_id="", font_resource_id="", font_name="")
+        try:
+            c = json.loads(t["content"])
+            for st in c.get("styles", []):
+                st["font"] = {"path": chemin_f, "id": ""}
+            t["content"] = json.dumps(c, ensure_ascii=False)
+        except (KeyError, ValueError):
+            pass
+    contenu.write_text(json.dumps(j, ensure_ascii=False), encoding="utf-8")
 
 
 def version_locale(racine):
@@ -244,6 +282,7 @@ def inscrire(racine, nom, total):
     """Complète la fiche du projet et l'ajoute à la liste des projets de CapCut (sauvegarde de la liste avant)."""
     d = racine / nom
     contenu = d / "draft_content.json"
+    poser_polices(contenu)
     shutil.copy2(contenu, d / "draft_info.json")   # CapCut ordinateur lit draft_info.json, d'autres versions draft_content.json
     aligner_version(d, racine)
     maintenant = int(time.time() * US)

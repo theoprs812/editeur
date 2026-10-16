@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installe l'Éditeur de Project Orange sur Mac. Chaque étape se saute si c'est déjà fait : on peut le relancer sans risque.
+# Installe le Studio de Project Orange sur Mac. Chaque étape se saute si c'est déjà fait : on peut le relancer sans risque.
 #
 #   bash ~/.editeur/scripts/installer.sh
 #
@@ -7,7 +7,7 @@
 # 2. ffmpeg (lire et fabriquer les vidéos), whisper (transcrire), yt-dlp (télécharger les reels)
 # 3. Le modèle de transcription (~550 Mo, en dernier)
 # 4. Le dossier ~/Editeur
-# 5. L'Éditeur dans Claude Code
+# 5. Le Studio dans Claude Code
 
 set -euo pipefail
 
@@ -70,8 +70,8 @@ ok "$ELEVE"
 echo "  Les polices (Instagram Sans + 15 polices gratuites)…"
 python3 "$RACINE/outils/police.py" --pack | tail -1
 
-# 4. L'Éditeur dans Claude Code ----------------------------------------------------
-etape "4/5 L'Éditeur dans Claude Code"
+# 4. Le Studio dans Claude Code ----------------------------------------------------
+etape "4/5 Le Studio dans Claude Code"
 # Les applis de bureau embarquent leur propre claude, souvent hors du PATH.
 sur_path() { [[ -x "$1" ]] && PATH="$(dirname "$1"):$PATH"; }
 a claude || for c in "$HOME/.local/bin/claude" "$HOME/.claude/local/claude" \
@@ -89,7 +89,7 @@ if a claude; then
   else
     claude plugin install editeur@editeur --scope user >/dev/null
   fi
-  ok "Éditeur branché dans Claude Code"
+  ok "Studio branché dans Claude Code"
 else
   echo "  Je ne trouve pas Claude Code sur ce Mac. Installe l'app Claude (claude.ai/download), puis relance."
 fi
@@ -107,4 +107,4 @@ fi
 
 echo
 echo "C'EST INSTALLÉ."
-echo "Ferme complètement l'app Claude (Cmd+Q), rouvre-la, ouvre le dossier Editeur dans l'onglet Code, et écris : salut l'éditeur"
+echo "Ferme complètement l'app Claude (Cmd+Q), rouvre-la, ouvre le dossier Editeur dans l'onglet Code, et écris : salut le studio"

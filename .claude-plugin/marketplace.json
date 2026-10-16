@@ -1,6 +1,6 @@
 {
   "name": "editeur",
-  "description": "L'Éditeur vidéo de Project Orange.",
+  "description": "Le Studio vidéo de Project Orange.",
   "owner": {"name": "Théo Parisi"},
   "plugins": [{"name": "editeur", "source": "./", "description": "Éditeur vidéo pour Claude Code : formats Project Orange, DA de l'élève, Instagram."}]
 }

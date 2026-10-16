@@ -1,6 +1,6 @@
 ---
 name: coupe-propre
-description: Le montage le plus simple de l'Éditeur : l'élève donne une ou plusieurs vidéos filmées (face caméra, iPhone), l'Éditeur garde la meilleure prise de chaque phrase, coupe les blancs, les « euh » et les ratés, ajoute les sous-titres, le texte du début s'il en veut un, et pose automatiquement ses plans de b-roll s'il en a mis dans le dossier b-roll. Se déclenche sur « coupe juste », « coupe-moi les blancs », « enlève les ratés », « garde que les bons moments », « fais simple », « nettoie ma vidéo », « intègre mon b-roll ». Charger d'abord la skill editeur.
+description: Le montage le plus simple du Studio : l'élève donne une ou plusieurs vidéos filmées (face caméra, iPhone), le Studio garde la meilleure prise de chaque phrase, coupe les blancs, les « euh » et les ratés, ajoute les sous-titres, le texte du début s'il en veut un, et pose automatiquement ses plans de b-roll s'il en a mis dans le dossier b-roll. Se déclenche sur « coupe juste », « coupe-moi les blancs », « enlève les ratés », « garde que les bons moments », « fais simple », « nettoie ma vidéo », « intègre mon b-roll ». Charger d'abord la skill editeur.
 ---
 
 # Coupe propre

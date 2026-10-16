@@ -1,4 +1,4 @@
-# Installe l'Éditeur de Project Orange sur Windows 10/11. On peut le relancer sans risque.
+# Installe le Studio de Project Orange sur Windows 10/11. On peut le relancer sans risque.
 #   powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.editeur\scripts\installer.ps1"
 $ErrorActionPreference = "Continue"
 $Racine = Split-Path -Parent $PSScriptRoot
@@ -25,11 +25,11 @@ foreach ($d in "ma-da\polices","references","musiques","videos","b-roll\entraine
 Ok $Eleve
 & $Py (Join-Path $Racine "outils\police.py") --pack | Select-Object -Last 1
 
-Etape "4/4 L'Éditeur dans Claude Code"
+Etape "4/4 Le Studio dans Claude Code"
 if (A claude) {
   if (-not ((claude plugin marketplace list 2>$null) -match "editeur")) { claude plugin marketplace add $Racine | Out-Null } else { claude plugin marketplace update editeur | Out-Null }
   if (-not ((claude plugin list 2>$null) -match "editeur@editeur")) { claude plugin install editeur@editeur --scope user | Out-Null } else { claude plugin update editeur@editeur --scope user | Out-Null }
-  Ok "Éditeur branché dans Claude Code"
+  Ok "Studio branché dans Claude Code"
 } else { Write-Host "  Claude Code introuvable : installe l'app Claude (claude.ai/download), puis relance." }
 
-Write-Host "`nC'EST INSTALLÉ. Ferme complètement l'app Claude, rouvre-la, ouvre le dossier Editeur dans l'onglet Code, et écris : salut l'éditeur"
+Write-Host "`nC'EST INSTALLÉ. Ferme complètement l'app Claude, rouvre-la, ouvre le dossier Editeur dans l'onglet Code, et écris : salut le studio"

@@ -1,6 +1,6 @@
 ---
 name: instagram
-description: Télécharge des reels Instagram (et TikTok, YouTube Shorts) dans l'Éditeur avec yt-dlp, puis s'en sert : comme modèle de style (DA), comme plan à intégrer dans une vidéo (b-roll, réaction, preuve), comme musique, ou comme référence de rythme pour un montage. Se déclenche dès que l'élève colle un lien instagram.com/reel, /p/, tiktok.com, youtube.com/shorts, ou dit « télécharge ce reel », « intègre-moi ça », « mets ce reel dans ma vidéo », « je veux le même montage que ça ». Charger d'abord la skill editeur.
+description: Télécharge des reels Instagram (et TikTok, YouTube Shorts) dans le Studio avec yt-dlp, puis s'en sert : comme modèle de style (DA), comme plan à intégrer dans une vidéo (b-roll, réaction, preuve), comme musique, ou comme référence de rythme pour un montage. Se déclenche dès que l'élève colle un lien instagram.com/reel, /p/, tiktok.com, youtube.com/shorts, ou dit « télécharge ce reel », « intègre-moi ça », « mets ce reel dans ma vidéo », « je veux le même montage que ça ». Charger d'abord la skill editeur.
 ---
 
 # Instagram (et les autres liens)

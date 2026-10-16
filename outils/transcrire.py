@@ -46,7 +46,7 @@ def avec_faster_whisper(w, langue):
     try:
         from faster_whisper import WhisperModel
     except ImportError:
-        sys.exit("Aucun moteur de transcription. Dis à Claude : « installe mon éditeur ».")
+        sys.exit("Aucun moteur de transcription. Dis à Claude : « installe mon studio ».")
     m = WhisperModel("large-v3-turbo", device="auto", compute_type="int8")
     segs, _ = m.transcribe(str(w), language=langue, word_timestamps=True, vad_filter=False)
     return [{"s": round(x.start, 3), "e": round(x.end, 3), "w": x.word.strip()} for s in segs for x in (s.words or []) if x.word.strip()]

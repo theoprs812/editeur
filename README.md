@@ -1,4 +1,4 @@
-# L'Éditeur Project Orange
+# Le Studio Project Orange
 
 Tu filmes, Claude monte. Un plugin Claude Code pour les élèves de Project Orange : coupe des blancs et des ratés,
 meilleure prise gardée, texte du début, sous-titres animés, b-roll trié et posé tout seul, musique, dans la DA de l'élève.
@@ -12,9 +12,9 @@ meilleure prise gardée, texte du début, sous-titres animés, b-roll trié et p
 
 Le tuto illustré : https://claude.ai/artifact/LbXK1cjS4NzKGnnaZbBv2v (source : `tuto/index.html`). En bref, dans l'onglet Code de l'app Claude, colle :
 
-> Installe l'Éditeur Project Orange. 1. Télécharge https://github.com/theoprs812/editeur dans le dossier ~/.editeur (git clone). 2. Lance : bash ~/.editeur/scripts/installer.sh 3. Suis ce qu'il affiche.
+> Installe le Studio Project Orange. 1. Télécharge https://github.com/theoprs812/editeur dans le dossier ~/.editeur (git clone). 2. Lance : bash ~/.editeur/scripts/installer.sh 3. Suis ce qu'il affiche.
 
-Puis rouvre Claude dans le dossier `~/Editeur` et écris « salut l'éditeur ».
+Puis rouvre Claude dans le dossier `~/Editeur` et écris « salut le studio ».
 
 ## Ce qu'il y a dedans
 

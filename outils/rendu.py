@@ -181,7 +181,7 @@ def ecrire_ass(projet, m, k, plans_t, total, chemin, hook_image=False):
 
 
 def polices_ok(k, dossier):
-    """Une police absente de l'ordinateur → TikTok Sans (fournie avec l'éditeur), jamais une police système au hasard."""
+    """Une police absente de l'ordinateur → TikTok Sans (fournie avec le studio), jamais une police système au hasard."""
     for sec in (None, "hook", "sous_titres", "textes"):
         p = k["police"] if sec is None else (k.get(sec) or {}).get("police")
         if p and not fichier_police([dossier], p.get("famille", ""), p.get("poids", 700)):
@@ -270,7 +270,7 @@ def preparer_hook(m, k, travail):
 # ---------- étape 2 : l'assemblage ----------
 
 def dossier_polices(travail, k):
-    """Toutes les polices utiles dans un seul dossier : celles de l'éditeur + celles de l'élève (ma-da/polices)."""
+    """Toutes les polices utiles dans un seul dossier : celles du studio + celles de l'élève (ma-da/polices)."""
     import shutil
     d = travail / "polices"
     d.mkdir(exist_ok=True)

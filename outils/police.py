@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Les polices de l'Éditeur.
+"""Les polices du Studio.
 
     python3 police.py --pack               le pack de base : Instagram Sans + les polices gratuites les plus utilisées en reels
     python3 police.py "Montserrat"         une police Google Fonts (gratuite), toutes ses graisses
@@ -21,8 +21,13 @@ DOSSIER = DOSSIER_ELEVE / "ma-da" / "polices"
 GRAISSES = [400, 500, 600, 700, 800, 900]
 PACK = ["Montserrat", "Inter", "Poppins", "Anton", "Bebas Neue", "Archivo Black", "DM Sans", "Oswald", "Roboto",
         "Bricolage Grotesque", "Playfair Display", "Space Grotesk", "Manrope", "Lexend", "League Spartan"]
-INSTAGRAM_SANS = {400: "", 500: " Medium", 700: " Bold", 300: " Light"}
-URL_IG = "https://fonts.cdnfonts.com/s/93599/Instagram Sans{suffixe}.woff"
+# Les polices du texte natif d'Instagram : (nom du fichier source, famille, graisse)
+INSTAGRAM = [("Instagram Sans Light", "Instagram Sans", 300), ("Instagram Sans", "Instagram Sans", 400),
+             ("Instagram Sans Medium", "Instagram Sans", 500), ("Instagram Sans Bold", "Instagram Sans", 700),
+             ("Instagram Sans Condensed", "Instagram Sans Condensed", 400), ("Instagram Sans Condensed Bold", "Instagram Sans Condensed", 700),
+             ("Instagram Sans Headline", "Instagram Sans Headline", 400)]
+URL_IG = "https://fonts.cdnfonts.com/s/93599/{nom}.woff"
+POLICES_MAC = Path.home() / "Library" / "Fonts"
 
 
 def telecharger(url, ua="Wget/1.21"):
@@ -82,14 +87,27 @@ def installer_google(famille, silencieux=False):
 
 
 def installer_instagram_sans():
+    """Toutes les polices Instagram, dans ~/Editeur/ma-da/polices et (Mac) dans ~/Library/Fonts,
+    pour que CapCut et les autres applis les proposent aussi."""
+    import platform, shutil
     DOSSIER.mkdir(parents=True, exist_ok=True)
-    for g, suffixe in INSTAGRAM_SANS.items():
-        dst = DOSSIER / f"Instagram_Sans-{g}.ttf"
-        if dst.exists():
-            continue
-        data = telecharger(URL_IG.format(suffixe=suffixe), ua="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)")
-        dst.write_bytes(woff_vers_ttf(data) if data[:4] == b"wOFF" else data)
-    print("✓ Instagram Sans (usage personnel : installée sur cet ordinateur seulement, jamais partagée)")
+    deja = {f.name.replace("_", "").replace(" ", "").split("-")[0] for f in POLICES_MAC.glob("*.[ot]tf")} if POLICES_MAC.exists() else set()
+    deja -= {f"{fam.replace(' ', '')}" for _, fam, _ in INSTAGRAM if any(POLICES_MAC.glob(f"{fam.replace(' ', '_')}-*"))}
+    for nom, famille, g in INSTAGRAM:
+        dst = DOSSIER / f"{famille.replace(' ', '_')}-{g}.ttf"
+        if not dst.exists():
+            try:
+                data = telecharger(URL_IG.format(nom=nom), ua="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)")
+            except Exception:
+                continue
+            dst.write_bytes(woff_vers_ttf(data) if data[:4] == b"wOFF" else data)
+        if platform.system() == "Darwin":
+            POLICES_MAC.mkdir(parents=True, exist_ok=True)
+            mac = POLICES_MAC / dst.name
+            if not mac.exists() and famille.replace(" ", "") not in deja:   # pas de doublon si la police est déjà installée
+                shutil.copy2(dst, mac)
+    print("✓ Polices Instagram : Instagram Sans, Instagram Sans Condensed, Instagram Sans Headline "
+          "(usage personnel : installées sur cet ordinateur seulement, jamais partagées)")
 
 
 if __name__ == "__main__":

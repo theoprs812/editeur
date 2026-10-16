@@ -46,7 +46,7 @@ Tous les temps sont en secondes. `debut` / `fin` = temps DANS le fichier source.
 
 ## Les commandes
 
-`$EDITEUR` = le dossier de l'éditeur (voir SKILL.md, section « Où est l'éditeur »).
+`$EDITEUR` = le dossier du studio (voir SKILL.md, section « Où est le studio »).
 
 | Commande | Ce qu'elle fait |
 |---|---|

@@ -19,7 +19,7 @@ NAVIGATEURS = ["chrome", "safari", "firefox", "edge", "brave"]
 def telecharger(lien, dossier, audio=False):
     ytdlp = outil("yt-dlp")
     if not ytdlp:
-        sys.exit("yt-dlp manque. Dis à Claude : « installe mon éditeur ».")
+        sys.exit("yt-dlp manque. Dis à Claude : « installe mon studio ».")
     dossier.mkdir(parents=True, exist_ok=True)
     modele = str(dossier / "%(channel,uploader_id,uploader)s-%(id)s" / "video.%(ext)s")
     base = [ytdlp, "--no-playlist", "--no-warnings", "-f", "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/bv*+ba/b",
