@@ -55,6 +55,29 @@ def clip_plan(projet, p, cache):
     return out, dur
 
 
+def clip_incrustation(projet, inc, fen, cache):
+    """Prépare une incrustation vidéo une seule fois, déjà à sa taille finale (plein écran ou fenêtre)."""
+    src = (projet / inc["source"]).resolve()
+    info = sonde(src)
+    d = round(float(inc.get("duree", 1.0)) * FPS) / FPS
+    fenetre = inc.get("mode", "plein") == "fenetre"
+    L, Hm = fen.get("largeur", 880), fen.get("hauteur_max", 880)
+    cle = hashlib.md5(json.dumps([str(src), src.stat().st_mtime, inc.get("debut_source", 0), d, fenetre, L, Hm, 2]).encode()).hexdigest()[:12]
+    out = cache / f"inc-{src.stem}-{cle}.mkv"
+    if out.exists():
+        return out
+    pre = TONEMAP + "," if info.get("hdr") else ""
+    taille = f"scale={L}:-2,crop={L}:'min(ih,{Hm})'" if fenetre else \
+        f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H}"
+    if info.get("image_fixe"):
+        entree = ["-loop", "1", "-t", f"{d:.3f}", "-i", str(src)]
+    else:
+        entree = ["-ss", f"{inc.get('debut_source', 0):.3f}", "-i", str(src)]
+    lancer([ffmpeg(), "-y", "-v", "error", *entree, "-an", "-vf", f"{pre}fps={FPS},{taille},setsar=1,format=yuv420p",
+            "-frames:v", str(round(d * FPS)), "-c:v", "libx264", "-preset", "veryfast", "-crf", "14", str(out)])
+    return out
+
+
 # ---------- sous-titres, hook, textes : un fichier .ass ----------
 
 def couleur(hexa, alpha=0):
@@ -209,24 +232,18 @@ def rendre(montage_path, apercu=False, image=None):
     filt, vlab, n_in = [], "[0:v]", 1
     fen = k["fenetre"]
     for j, inc in enumerate(m.get("incrustations", [])):
-        src = (projet / inc["source"]).resolve()
         a, d = float(inc["a"]), float(inc.get("duree", 1.0))
-        if src.suffix.lower() in IMAGE_EXT:
-            cmd += ["-loop", "1", "-t", f"{d:.3f}", "-i", str(src)]
-            pre = ""
-        else:
-            cmd += ["-ss", f"{inc.get('debut_source', 0):.3f}", "-t", f"{d:.3f}", "-i", str(src)]
-            pre = TONEMAP + "," if sonde(src).get("hdr") else ""
+        cmd += ["-i", str(clip_incrustation(projet, inc, fen, cache))]
+        pre = ""
         if inc.get("mode", "plein") == "fenetre":
             L, R = fen.get("largeur", 880), fen.get("arrondi", 40)
             coin = (f"geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='if(gt(abs(W/2-X),W/2-{R})*gt(abs(H/2-Y),H/2-{R}),"
                     f"if(lte(hypot({R}-(W/2-abs(W/2-X)),{R}-(H/2-abs(H/2-Y))),{R}),255,0),255)'")
-            filt.append(f"[{n_in}:v]{pre}fps={FPS},scale={L}:-2,crop={L}:'min(ih,{fen.get('hauteur_max', 880)})',format=rgba,{coin},"
+            filt.append(f"[{n_in}:v]format=rgba,{coin},"
                         f"fade=t=in:st=0:d=0.12:alpha=1,setpts=PTS-STARTPTS+{a}/TB[i{j}]")
             pos = f"x=(W-w)/2:y='{fen.get('y', 260)}+40*max(0,1-(t-{a})/0.15)'"
         else:
-            filt.append(f"[{n_in}:v]{pre}fps={FPS},scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},"
-                        f"setsar=1,format=rgba,setpts=PTS-STARTPTS+{a}/TB[i{j}]")
+            filt.append(f"[{n_in}:v]setpts=PTS-STARTPTS+{a}/TB[i{j}]")
             pos = "x=0:y=0"
         filt.append(f"{vlab}[i{j}]overlay={pos}:enable='between(t,{a},{a + d})':eof_action=pass[b{j}]")
         vlab, n_in = f"[b{j}]", n_in + 1
