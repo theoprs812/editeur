@@ -21,7 +21,7 @@ Etape "2/4 La transcription (faster-whisper, le modèle se télécharge à la pr
 & $Py -m pip install --quiet --upgrade faster-whisper | Out-Null; Ok "faster-whisper"
 
 Etape "3/4 Ton dossier Editeur"
-foreach ($d in "ma-da\polices","references","musiques","videos") { New-Item -ItemType Directory -Force -Path (Join-Path $Eleve $d) | Out-Null }
+foreach ($d in "ma-da\polices","references","musiques","videos","b-roll\entrainement","b-roll\lifestyle","b-roll\podcast","b-roll\bureau") { New-Item -ItemType Directory -Force -Path (Join-Path $Eleve $d) | Out-Null }
 Ok $Eleve
 
 Etape "4/4 L'Éditeur dans Claude Code"

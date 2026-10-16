@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studio · L'Éditeur</title>
+<style>
+/* Layout : la vidéo à gauche (taille réelle du format), les réglages à droite, la barre d'actions en bas des réglages */
+:root {
+  --bg: #F6F6F3; --fg: #17181A; --muted: #62666D; --card: #FFFFFF; --line: #E2E1DC;
+  --accent: #FF6B1A; --accent-ink: #FFFFFF; --accent-soft: #FFE7D8; --stage: #0E0F11; --ok: #1F8A4C; --warn: #B4540F;
+  --f-body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root {
+  --bg: #121315; --fg: #F2F1EE; --muted: #A2A5AB; --card: #1B1C1F; --line: #2C2D31;
+  --accent: #FF8A3D; --accent-ink: #1A0D04; --accent-soft: #3A2414; --stage: #000000; --ok: #4CC17D; --warn: #F0A050; color-scheme: dark } }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.45 var(--f-body); }
+header { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--card); }
+header b { font-size: 16px; }
+header .sep { color: var(--muted); }
+header .chip { margin-left: auto; font-size: 13px; font-weight: 600; background: var(--accent-soft); padding: 4px 10px; border-radius: 999px; }
+main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; height: calc(100% - 53px); }
+.scene { display: grid; place-items: center; padding: 20px; min-width: 0; min-height: 0; background: var(--stage); position: relative; }
+.cadre { position: relative; overflow: hidden; background: #000; border-radius: 10px; box-shadow: 0 20px 60px -20px rgba(0,0,0,.6); }
+.cadre video, .cadre img.vrai { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cadre img.vrai { z-index: 5; }
+.calque { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.hook, .sous, .texte { position: absolute; left: 50%; text-align: center; pointer-events: auto; white-space: pre-line; }
+.hook { transform: translateX(-50%); cursor: ns-resize; }
+.hook span { box-decoration-break: clone; -webkit-box-decoration-break: clone; line-height: 1.32; }
+.sous, .texte { transform: translate(-50%, -50%); line-height: 1.15; }
+.sous { cursor: ns-resize; }
+.trait { paint-order: stroke fill; }
+.pop { animation: pop .11s ease-out; }
+@keyframes pop { from { scale: .82; } to { scale: 1; } }
+.sel { outline: 2px dashed var(--accent); outline-offset: 6px; }
+.safe { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.safe i { position: absolute; background: rgba(255, 214, 0, .22); border: 1px dashed rgba(255, 214, 0, .8); }
+.attente { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; z-index: 6; background: rgba(0,0,0,.55); text-align: center; padding: 20px; font-weight: 600; }
+.lecture { position: absolute; left: 20px; right: 20px; bottom: 14px; display: flex; gap: 10px; align-items: center; z-index: 7; }
+.lecture button { background: rgba(255,255,255,.14); color: #fff; border: 0; border-radius: 8px; padding: 6px 12px; font-weight: 600; cursor: pointer; }
+.lecture input { flex: 1; accent-color: var(--accent); }
+.lecture span { color: #fff; font-size: 13px; font-variant-numeric: tabular-nums; min-width: 92px; text-align: right; }
+
+aside { border-left: 1px solid var(--line); background: var(--card); display: flex; flex-direction: column; min-height: 0; }
+.reglages { overflow: auto; padding: 8px 18px 18px; flex: 1; }
+details { border-bottom: 1px solid var(--line); padding: 12px 0; }
+summary { font-weight: 700; cursor: pointer; list-style: none; display: flex; justify-content: space-between; }
+summary::after { content: "+"; color: var(--muted); }
+details[open] summary::after { content: "–"; }
+.champ { display: grid; gap: 6px; margin-top: 12px; }
+.champ > label, .ligne > label { font-size: 13px; color: var(--muted); font-weight: 600; }
+.ligne { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
+textarea { width: 100%; min-height: 64px; resize: vertical; font: 600 15px/1.35 var(--f-body); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+input[type=color] { width: 38px; height: 28px; border: 1px solid var(--line); border-radius: 6px; padding: 0; background: none; cursor: pointer; }
+select, input[type=number] { font: inherit; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+input[type=number] { width: 76px; }
+.bascule { position: relative; width: 40px; height: 24px; flex: none; }
+.bascule input { opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; position: absolute; z-index: 1; }
+.bascule span { position: absolute; inset: 0; border-radius: 999px; background: var(--line); transition: background .15s; }
+.bascule span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.bascule input:checked + span { background: var(--accent); }
+.bascule input:checked + span::after { transform: translateX(16px); }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { flex: 1; border: 0; background: transparent; color: var(--fg); padding: 5px 0; font: 600 13px var(--f-body); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.aide { font-size: 13px; color: var(--muted); margin-top: 8px; }
+.actions { border-top: 1px solid var(--line); padding: 14px 18px; display: grid; gap: 8px; }
+.actions .deux { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+button.b { font: 700 14px var(--f-body); border-radius: 10px; padding: 10px 12px; cursor: pointer; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+button.b.go { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-size: 15px; padding: 12px; }
+button.b:disabled { opacity: .55; cursor: progress; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.statut { font-size: 13px; min-height: 18px; color: var(--muted); }
+.statut.ok { color: var(--ok); font-weight: 600; }
+.statut.ko { color: var(--warn); font-weight: 600; }
+@media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); height: auto; } .scene { height: 70vh; } aside { border-left: 0; } }
+@media (prefers-reduced-motion: reduce) { .pop { animation: none; } }
+</style>
+</head>
+<body>
+<header>
+  <b>L'Éditeur</b><span class="sep">·</span><span>Studio</span><span class="sep">·</span><span id="nom">…</span>
+  <span class="chip" id="da">…</span>
+</header>
+<main>
+  <section class="scene" aria-label="Aperçu de la vidéo">
+    <div class="cadre" id="cadre">
+      <video id="video" playsinline preload="auto"></video>
+      <img class="vrai" id="vrai" alt="Image réelle de la vidéo finale" hidden>
+      <div class="calque" id="calque">
+        <div class="hook" id="hook" title="Glisse pour monter ou descendre"></div>
+        <div class="sous trait" id="sous" title="Glisse pour monter ou descendre"></div>
+        <div id="textes"></div>
+      </div>
+      <div class="safe" id="safe" hidden><i id="s-haut"></i><i id="s-bas"></i><i id="s-droite"></i></div>
+      <div class="attente" id="attente">Je prépare l'aperçu de ta vidéo (environ une minute)…</div>
+    </div>
+    <div class="lecture">
+      <button type="button" id="jouer">▶ Lire</button>
+      <input type="range" id="temps" min="0" max="1" step="0.01" value="0" aria-label="Moment de la vidéo">
+      <span id="horloge">0,0 / 0,0 s</span>
+    </div>
+  </section>
+
+  <aside>
+    <div class="reglages">
+      <details open>
+        <summary>Texte du début</summary>
+        <div class="champ"><label for="h-texte">Ce qui est écrit</label><textarea id="h-texte"></textarea></div>
+        <div class="ligne"><label for="h-a">Reste à l'écran jusqu'à (s)</label><input type="number" id="h-a" min="0.5" step="0.1"></div>
+        <div class="champ"><label for="h-taille">Taille</label><input type="range" id="h-taille" min="40" max="140"></div>
+        <div class="champ"><label for="h-y">Hauteur (ou glisse le texte sur la vidéo)</label><input type="range" id="h-y" min="0" max="1920"></div>
+        <div class="ligne"><label for="h-couleur">Couleur du texte</label><input type="color" id="h-couleur"></div>
+        <div class="ligne"><label for="h-fond-on">Fond derrière le texte</label><span class="bascule"><input type="checkbox" id="h-fond-on"><span></span></span></div>
+        <div class="ligne" id="l-h-fond"><label for="h-fond">Couleur du fond</label><input type="color" id="h-fond"></div>
+        <div class="ligne"><label for="h-maj">Tout en majuscules</label><span class="bascule"><input type="checkbox" id="h-maj"><span></span></span></div>
+      </details>
+      <details open>
+        <summary>Sous-titres</summary>
+        <div class="ligne"><label for="s-on">Afficher les sous-titres</label><span class="bascule"><input type="checkbox" id="s-on"><span></span></span></div>
+        <div class="ligne"><label for="s-mot-on">Surligner le mot dit</label><span class="bascule"><input type="checkbox" id="s-mot-on"><span></span></span></div>
+        <div class="ligne" id="l-s-mot"><label for="s-mot">Couleur du mot dit</label><input type="color" id="s-mot"></div>
+        <div class="champ"><label>Mots à la fois</label><div class="seg" id="s-n" role="group" aria-label="Mots à la fois"><button type="button" data-v="1">1</button><button type="button" data-v="2">2</button><button type="button" data-v="3">3</button><button type="button" data-v="4">4</button></div></div>
+        <div class="champ"><label for="s-taille">Taille</label><input type="range" id="s-taille" min="36" max="130"></div>
+        <div class="champ"><label for="s-y">Hauteur (ou glisse les sous-titres sur la vidéo)</label><input type="range" id="s-y" min="0" max="1920"></div>
+        <div class="ligne"><label for="s-couleur">Couleur</label><input type="color" id="s-couleur"></div>
+        <div class="champ"><label for="s-contour">Contour</label><input type="range" id="s-contour" min="0" max="14"></div>
+        <div class="ligne"><label for="s-ccontour">Couleur du contour</label><input type="color" id="s-ccontour"></div>
+        <div class="ligne"><label for="s-maj">Tout en majuscules</label><span class="bascule"><input type="checkbox" id="s-maj"><span></span></span></div>
+      </details>
+      <details>
+        <summary>Police</summary>
+        <div class="champ"><label for="p-famille">Police</label><select id="p-famille"></select></div>
+        <div class="champ"><label for="p-poids">Épaisseur</label><select id="p-poids"></select></div>
+        <p class="aide">Une autre police ? Demande-la à Claude : « mets la police Montserrat ».</p>
+      </details>
+      <details>
+        <summary>Affichage</summary>
+        <div class="ligne"><label for="v-safe">Montrer les zones cachées par Instagram</label><span class="bascule"><input type="checkbox" id="v-safe"><span></span></span></div>
+        <button class="b" type="button" id="b-vrai" style="width:100%;margin-top:12px">Voir la vraie image à ce moment</button>
+        <p class="aide">L'aperçu est dessiné en direct. Ce bouton fabrique la vraie image, telle qu'elle sortira.</p>
+      </details>
+    </div>
+    <div class="actions">
+      <div class="deux">
+        <button class="b" type="button" id="b-video">Garder pour cette vidéo</button>
+        <button class="b" type="button" id="b-da">Garder pour toutes mes vidéos</button>
+      </div>
+      <button class="b go" type="button" id="b-fab">Fabriquer la vidéo</button>
+      <div class="statut" id="statut" role="status"></div>
+    </div>
+  </aside>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const V = $("video"), CADRE = $("cadre");
+let E = null, K = null, echelle = 1, blocIdx = -1, sale = false;
+
+function setStatut(t, cls = "") { const s = $("statut"); s.textContent = t; s.className = "statut " + cls; }
+function nettoie(t, maj) { t = (t || "").replace(/[.,;:]+$/, ""); return maj ? t.toUpperCase() : t; }
+
+async function charger() {
+  const r = await fetch("/api/etat"); E = await r.json();
+  if (!K) { K = structuredClone(E.kit); remplirPolices(); remplirChamps(); }
+  $("nom").textContent = E.nom; $("da").textContent = E.da_nom;
+  $("temps").max = E.total;
+  if (E.fond === "pret") {
+    if (!V.src) { V.src = "/media/fond?v=" + Date.now(); }
+    $("attente").hidden = true;
+  } else if (E.fond === "erreur") {
+    $("attente").textContent = "L'aperçu n'a pas pu être préparé. Dis à Claude : « le studio ne marche pas ».";
+  } else { setTimeout(charger, 2000); }
+  dimensionner(); dessiner(true);
+}
+
+function dimensionner() {
+  const zone = CADRE.parentElement, pad = 40, bas = 60;
+  const lw = zone.clientWidth - pad, lh = zone.clientHeight - pad - bas;
+  const r = E.largeur / E.hauteur;
+  let w = lw, h = w / r; if (h > lh) { h = lh; w = h * r; }
+  CADRE.style.width = w + "px"; CADRE.style.height = h + "px"; echelle = w / E.largeur;
+  const sz = E.largeur < E.hauteur;
+  $("s-haut").style.cssText = `left:0;right:0;top:0;height:${220 * echelle}px`;
+  $("s-bas").style.cssText = `left:0;right:0;top:${1460 * echelle}px;bottom:0`;
+  $("s-droite").style.cssText = `top:0;bottom:0;left:${960 * echelle}px;right:0`;
+  $("safe").dataset.vertical = sz;
+}
+
+function px(v) { return (v * echelle) + "px"; }
+function famille() { return `"${K.police.famille}", system-ui, sans-serif`; }
+function poids() { return K.police.poids || (K.police.gras === false ? 400 : 700); }
+
+function dessiner(force = false) {
+  if (!E) return;
+  const t = V.currentTime || 0, hk = K.hook, st = K.sous_titres;
+  // texte du début
+  const H = $("hook"), txt = $("h-texte").value;
+  const visible = txt.trim() && t >= (E.hook.de || 0) && t < parseFloat($("h-a").value || 3);
+  H.hidden = !visible;
+  if (visible) {
+    const c = hk.avec_fond ? Math.max(14, Math.floor(hk.taille / 4)) : 0;
+    H.style.top = px(hk.y); H.style.width = px(E.largeur - 2 * (hk.marge_cotes || 100));
+    H.style.font = `${poids()} ${px(hk.taille * 0.82)}/1.32 ${famille()}`;
+    const contenu = (hk.majuscules ? txt.toUpperCase() : txt).replace(/ ([?!:;»])/g, "\u00a0$1");
+    H.innerHTML = "";
+    const s = document.createElement("span"); s.textContent = contenu; s.style.color = hk.couleur;
+    if (hk.avec_fond) { s.style.background = hk.fond; s.style.padding = `${px(c * 0.45)} ${px(c)}`; }
+    else if (hk.contour) { s.className = "trait"; s.style.webkitTextStroke = `${px(hk.contour * 2)} ${hk.couleur_contour}`; }
+    H.appendChild(s);
+  }
+  // sous-titres
+  const S = $("sous"); let i = -1;
+  if ($("s-on").checked) {
+    const n = st.mots_par_bloc || 3, blocs = regrouper(n);
+    for (let j = 0; j < blocs.length; j++) {
+      const b = blocs[j], fin = Math.min(b[b.length - 1].e + 0.25, j + 1 < blocs.length ? blocs[j + 1][0].s : E.total);
+      if (t >= b[0].s && t < fin) { i = j; break; }
+    }
+    if (i < 0 && !V.played.length && blocs.length) i = 0;
+    S.hidden = i < 0;
+    if (i >= 0) {
+      const b = blocs[i];
+      S.style.top = px(st.y); S.style.width = px(E.largeur - 2 * (st.marge_cotes || 120));
+      S.style.font = `${poids()} ${px(st.taille * 0.82)}/1.15 ${famille()}`;
+      S.style.color = st.couleur; S.style.webkitTextStroke = st.contour ? `${px(st.contour * 2)} ${st.couleur_contour}` : "0";
+      S.innerHTML = "";
+      let k0 = b.findIndex((w, k) => t >= w.s && (k === b.length - 1 || t < b[k + 1].s));
+      if (k0 < 0) k0 = 0;
+      b.forEach((w, k) => {
+        const sp = document.createElement("span"); sp.textContent = nettoie(w.w, st.majuscules) + (k < b.length - 1 ? " " : "");
+        if (st.couleur_mot && k === k0) sp.style.color = st.couleur_mot;
+        S.appendChild(sp);
+      });
+      if (i !== blocIdx && st.animation === "pop") { S.classList.remove("pop"); void S.offsetWidth; S.classList.add("pop"); }
+    }
+  } else S.hidden = true;
+  blocIdx = i;
+  // textes posés (one shot, mots-clés)
+  const T = $("textes"); T.innerHTML = "";
+  for (const x of E.textes || []) {
+    if (t < (x.de || 0) || t >= (x.a ?? E.total)) continue;
+    const d = document.createElement("div"); d.className = "texte trait";
+    const ys = { haut: E.hauteur * 0.22, centre: E.hauteur / 2, bas: E.hauteur * 0.7 };
+    const tx = K.textes;
+    d.style.top = px(x.y ?? ys[x.position || "centre"]); d.style.width = px(E.largeur - 2 * (tx.marge_cotes || 110));
+    d.style.font = `${poids()} ${px(tx.taille * 0.82)}/1.2 ${famille()}`; d.style.color = tx.couleur;
+    d.style.webkitTextStroke = tx.contour ? `${px(tx.contour * 2)} ${tx.couleur_contour}` : "0";
+    d.textContent = (tx.majuscules ? x.texte.toUpperCase() : x.texte).replaceAll("\\n", "\n");
+    T.appendChild(d);
+  }
+  $("temps").value = t; $("horloge").textContent = `${t.toFixed(1).replace(".", ",")} / ${E.total.toFixed(1).replace(".", ",")} s`;
+}
+
+let cacheN = null, cacheBlocs = null;
+function regrouper(n) {
+  if (cacheN === n) return cacheBlocs;
+  const mots = E.blocs.flat(), out = []; let cur = [];
+  mots.forEach((m, i) => {
+    cur.push(m);
+    const finPhrase = /[.?!,;:]$/.test(m.w), trou = i + 1 < mots.length && mots[i + 1].s - m.e > 0.45;
+    const long = cur.reduce((a, x) => a + x.w.length + 1, 0) > 20;
+    if (cur.length >= n || finPhrase || trou || long) { out.push(cur); cur = []; }
+  });
+  if (cur.length) out.push(cur);
+  cacheN = n; cacheBlocs = out; return out;
+}
+
+function remplirPolices() {
+  const f = $("p-famille"); f.innerHTML = "";
+  for (const fam of Object.keys(E.polices)) { const o = document.createElement("option"); o.value = o.textContent = fam; f.appendChild(o); }
+  if (!E.polices[K.police.famille]) { const o = document.createElement("option"); o.value = o.textContent = K.police.famille; f.appendChild(o); }
+  let css = "";
+  for (const [fam, lst] of Object.entries(E.polices)) for (const p of lst) css += `@font-face{font-family:"${fam}";src:url("/polices/${encodeURIComponent(p.fichier)}");font-weight:${p.poids};}`;
+  const st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
+}
+function remplirPoids() {
+  const p = $("p-poids"), lst = E.polices[K.police.famille] || [{ poids: 700 }]; p.innerHTML = "";
+  const noms = { 400: "Normale", 500: "Moyenne", 600: "Semi-grasse", 700: "Grasse", 800: "Très grasse", 900: "Noire" };
+  for (const x of lst) { const o = document.createElement("option"); o.value = x.poids; o.textContent = noms[x.poids] || x.poids; p.appendChild(o); }
+  p.value = poids(); if (!p.value && p.options.length) p.value = p.options[p.options.length - 1].value;
+}
+
+function remplirChamps() {
+  const hk = K.hook, st = K.sous_titres, max = E.hauteur;
+  $("h-texte").value = E.hook.texte || ""; $("h-a").value = E.hook.a ?? 3;
+  $("h-taille").value = hk.taille; $("h-y").max = max; $("h-y").value = hk.y;
+  $("h-couleur").value = hk.couleur; $("h-fond-on").checked = !!hk.avec_fond; $("h-fond").value = hk.fond || "#FFFFFF"; $("h-maj").checked = !!hk.majuscules;
+  $("s-on").checked = E.sous_titres_actifs !== false; $("s-mot-on").checked = !!st.couleur_mot; $("s-mot").value = st.couleur_mot || "#FFD43B";
+  $("s-taille").value = st.taille; $("s-y").max = max; $("s-y").value = st.y; $("s-couleur").value = st.couleur;
+  $("s-contour").value = st.contour || 0; $("s-ccontour").value = st.couleur_contour || "#000000"; $("s-maj").checked = !!st.majuscules;
+  for (const b of $("s-n").children) b.setAttribute("aria-pressed", String(+b.dataset.v === (st.mots_par_bloc || 3)));
+  $("p-famille").value = K.police.famille; remplirPoids();
+  $("l-h-fond").hidden = !hk.avec_fond; $("l-s-mot").hidden = !st.couleur_mot;
+}
+
+function lier(id, fn, ev = "input") { $(id).addEventListener(ev, () => { fn($(id)); sale = true; dessiner(true); }); }
+lier("h-texte", () => {}); lier("h-a", () => {});
+lier("h-taille", (e) => K.hook.taille = +e.value); lier("h-y", (e) => K.hook.y = +e.value);
+lier("h-couleur", (e) => K.hook.couleur = e.value);
+lier("h-fond-on", (e) => { K.hook.avec_fond = e.checked; $("l-h-fond").hidden = !e.checked; }, "change");
+lier("h-fond", (e) => K.hook.fond = e.value); lier("h-maj", (e) => K.hook.majuscules = e.checked, "change");
+lier("s-on", () => {}, "change");
+lier("s-mot-on", (e) => { K.sous_titres.couleur_mot = e.checked ? $("s-mot").value : null; $("l-s-mot").hidden = !e.checked; }, "change");
+lier("s-mot", (e) => K.sous_titres.couleur_mot = e.value);
+lier("s-taille", (e) => K.sous_titres.taille = +e.value); lier("s-y", (e) => K.sous_titres.y = +e.value);
+lier("s-couleur", (e) => K.sous_titres.couleur = e.value); lier("s-contour", (e) => K.sous_titres.contour = +e.value);
+lier("s-ccontour", (e) => K.sous_titres.couleur_contour = e.value); lier("s-maj", (e) => K.sous_titres.majuscules = e.checked, "change");
+lier("p-famille", (e) => { K.police.famille = e.value; remplirPoids(); K.police.poids = +$("p-poids").value; }, "change");
+lier("p-poids", (e) => K.police.poids = +e.value, "change");
+$("s-n").addEventListener("click", (ev) => {
+  const b = ev.target.closest("button"); if (!b) return;
+  K.sous_titres.mots_par_bloc = +b.dataset.v; for (const x of $("s-n").children) x.setAttribute("aria-pressed", String(x === b));
+  sale = true; dessiner(true);
+});
+$("v-safe").addEventListener("change", (e) => { $("safe").hidden = !e.target.checked; });
+
+// glisser le texte du début et les sous-titres
+function glisser(el, cle, champ, centre) {
+  el.addEventListener("pointerdown", (ev) => {
+    ev.preventDefault(); el.setPointerCapture(ev.pointerId); el.classList.add("sel");
+    const haut = CADRE.getBoundingClientRect().top, dy = centre ? 0 : (ev.clientY - el.getBoundingClientRect().top);
+    const bouge = (e) => { const y = Math.round((e.clientY - haut - dy) / echelle); K[cle].y = Math.max(0, Math.min(E.hauteur, y)); $(champ).value = K[cle].y; sale = true; dessiner(true); };
+    const fin = () => { el.classList.remove("sel"); el.removeEventListener("pointermove", bouge); el.removeEventListener("pointerup", fin); };
+    el.addEventListener("pointermove", bouge); el.addEventListener("pointerup", fin);
+  });
+}
+glisser($("hook"), "hook", "h-y", false); glisser($("sous"), "sous_titres", "s-y", true);
+
+// lecture
+$("jouer").addEventListener("click", () => { $("vrai").hidden = true; V.paused ? V.play() : V.pause(); });
+V.addEventListener("play", () => $("jouer").textContent = "❚❚ Pause"); V.addEventListener("pause", () => $("jouer").textContent = "▶ Lire");
+$("temps").addEventListener("input", (e) => { $("vrai").hidden = true; V.currentTime = +e.target.value; dessiner(true); });
+(function boucle() { if (E && !V.paused) dessiner(); requestAnimationFrame(boucle); })();
+V.addEventListener("seeked", () => dessiner(true));
+window.addEventListener("resize", () => { if (E) { dimensionner(); dessiner(true); } });
+
+function reglages() {
+  return { hook: { texte: $("h-texte").value, a: parseFloat($("h-a").value || 3) }, hook_style: K.hook,
+           sous_titres: K.sous_titres, police: K.police, sous_titres_actifs: $("s-on").checked };
+}
+async function poster(url, corps) {
+  const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corps) });
+  const j = await r.json(); if (j.erreur) throw new Error(j.erreur); return j;
+}
+$("b-video").addEventListener("click", async () => {
+  try { await poster("/api/enregistrer", { ...reglages(), portee: "video" }); sale = false; setStatut("Gardé pour cette vidéo.", "ok"); }
+  catch (e) { setStatut("Pas enregistré. Dis à Claude : « le studio ne marche pas ».", "ko"); }
+});
+$("b-da").addEventListener("click", async () => {
+  try { await poster("/api/enregistrer", { ...reglages(), portee: "da" }); sale = false; setStatut("C'est dans ta DA : toutes tes prochaines vidéos auront ce style.", "ok"); }
+  catch (e) { setStatut("Pas enregistré. Dis à Claude : « le studio ne marche pas ».", "ko"); }
+});
+$("b-vrai").addEventListener("click", async () => {
+  const b = $("b-vrai"); b.disabled = true; setStatut("Je fabrique la vraie image…");
+  try { const j = await poster("/api/image", { t: V.currentTime || 0.5, reglages: reglages() }); const im = $("vrai"); im.src = j.url; im.hidden = false; setStatut("Voilà la vraie image. Clique sur Lire pour revenir à l'aperçu.", "ok"); }
+  catch (e) { setStatut("Image impossible. Dis à Claude : « le studio ne marche pas ».", "ko"); }
+  b.disabled = false;
+});
+$("b-fab").addEventListener("click", async () => {
+  const b = $("b-fab"); b.disabled = true; setStatut("Je fabrique ta vidéo… (une minute environ)");
+  try { await poster("/api/fabriquer", reglages()); suivre(); }
+  catch (e) { setStatut("Ça n'a pas marché. Dis à Claude : « le studio ne marche pas ».", "ko"); b.disabled = false; }
+});
+async function suivre() {
+  const r = await fetch("/api/etat"), j = await r.json();
+  if (j.fabrication === "en cours") return setTimeout(suivre, 1500);
+  $("b-fab").disabled = false;
+  if (j.fabrication === "fini") {
+    setStatut("Ta vidéo est prête : " + j.fichier.split("/").pop(), "ok");
+    const ouvrir = document.createElement("button"); ouvrir.className = "b"; ouvrir.type = "button"; ouvrir.textContent = "Ouvrir le dossier";
+    ouvrir.onclick = () => poster("/api/ouvrir", {}); $("statut").append(" ", ouvrir);
+  } else setStatut("Ça n'a pas marché. Dis à Claude : « le studio ne marche pas ».", "ko");
+}
+window.addEventListener("beforeunload", (e) => { if (sale) { e.preventDefault(); e.returnValue = ""; } });
+charger();
+</script>
+</body>
+</html>

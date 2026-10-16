@@ -15,7 +15,7 @@ Pour l'élève qui veut juste une vidéo propre : il s'est filmé, il a recommen
 4. **Le b-roll, s'il y en a.** `planche.py b-roll/`, regarde chaque planche, note dans `travail/b-roll.md` ce que montre chaque fichier. Pose chaque plan au moment où la phrase en parle : incrustation `"mode": "plein"` de 1 à 2 s, jamais pendant les 3 premières secondes (le visage et le texte du début d'abord), jamais deux d'affilée sans revenir au visage. Un plan qui ne colle à rien ne va pas dans la vidéo : dis-le à l'élève en une ligne.
 5. **Le texte du début.** Si la vidéo commence par une phrase forte, propose 3 textes du début courts (7 mots max), recommande-en un. L'élève peut dire « pas de texte ».
 6. **Animations.** Les sous-titres et le texte du début apparaissent avec un petit effet d'entrée (déjà réglé dans la DA). Rien d'autre par défaut : pas de zoom, pas de transition.
-7. **Musique.** Seulement si l'élève en a mis une dans `musique/` ou dans `~/Editeur/musiques/` : `niveau_db: -12`, baissée sous la voix.
+7. **Musique.** Seulement si l'élève en a mis une dans `musique/` ou dans `~/Editeur/musiques/` : `niveau_db: -15`, baissée sous la voix.
 8. **Vérifier, montrer, corriger** comme dans la skill editeur.
 
 ## Exemple de montage.json

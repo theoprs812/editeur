@@ -27,6 +27,9 @@ Editeur/
   ma-da/          sa direction artistique (kit.json + aperçus), voir la skill ma-da
   references/     les reels Instagram téléchargés (skill instagram)
   musiques/       ses musiques, réutilisables dans toutes ses vidéos
+  b-roll/         SA BIBLIOTHÈQUE de b-roll, rangée par thèmes, réutilisée dans toutes ses vidéos :
+    entrainement/   lifestyle/   podcast/   bureau/   voyage/   …  (les noms qu'il veut)
+    INDEX.md        une ligne par fichier : thème, ce qu'on voit, les bons moments (tu le tiens à jour)
   videos/
     2026-10-16 mon-sujet/
       rushes/     ce qu'il a filmé (face caméra, voix off)
@@ -68,22 +71,24 @@ Qu'est-ce qu'on fait ?
 ```
    Charge ensuite la skill du format (`yap`, `talking-head`, `vlog`, `one-shot`, `dix-shots`, `coupe-propre`). Les règles du format gagnent sur tes envies.
 
-2. **Regarder et écouter.** `python3 "$EDITEUR/outils/planche.py" rushes/ b-roll/` puis regarde CHAQUE planche (`travail/planches/*.jpg`). `python3 "$EDITEUR/outils/transcrire.py" rushes/<fichier>` pour chaque rush où quelqu'un parle, puis lis `travail/<nom>.txt`. Ne décris jamais un plan que tu n'as pas regardé.
-3. **Trier le b-roll.** Pour chaque fichier de `b-roll/`, une ligne dans `travail/b-roll.md` : ce qu'on voit, les bons moments (en secondes), à quel moment du texte il colle. C'est toi qui fais le lien entre ce qui est dit et ce qu'on voit.
-4. **Le plan, validé avant de couper.** En 4 à 6 lignes simples : le texte du début (propose 3 hooks, recommande-en un), ce que tu gardes, ce que tu enlèves (la meilleure prise de chaque phrase, en général la dernière), où vont les plans d'illustration, la musique. « 👉 À toi : réponds ok, ou dis-moi ce que tu changes. »
-5. **Couper.** Écris `travail/garde.json` puis `python3 "$EDITEUR/outils/couper.py" travail/garde.json`. Recette complète : [references/montage-json.md](references/montage-json.md).
-6. **Habiller.** Complète `travail/montage.json` (hook, incrustations, textes, musique) selon le format et la DA. Pour savoir à quel moment de la vidéo finale une phrase est dite : `python3 "$EDITEUR/outils/ou.py" travail/montage.json "la phrase"` (jamais de calcul de tête).
-7. **Vérifier toi-même avant de montrer.** `python3 "$EDITEUR/outils/rendu.py" travail/montage.json --image <t>` au début (hook), sur chaque incrustation, au milieu (sous-titres). Regarde chaque image : texte lisible, rien sur le visage (sous-titres jamais entre les yeux et le menton : si le visage remplit l'écran, descends-les sous le menton avec `ajustements`, au plus bas y = 1420), rien hors de l'écran, sous-titres au-dessus de la barre Instagram. Corrige et recommence avant de montrer quoi que ce soit.
-8. **Montrer.** Rendu final : `python3 "$EDITEUR/outils/rendu.py" travail/montage.json`. Ouvre le dossier `export/`. « Ta vidéo est prête : 38 s, 4 plans d'illustration, texte du début « … ». 👉 À toi : regarde-la. Dis-moi ce que tu changes (« change le texte du début », « enlève la phrase sur… », « plus de b-roll »), ou écris parfait. »
-9. **Corriger.** Chaque retour = une nouvelle version (`-v2`, `-v3`…). Ce qui n'a pas changé est réutilisé, c'est rapide. Quand l'élève corrige le style (taille, couleur, position), propose de l'enregistrer dans sa DA pour toutes les prochaines vidéos (skill `ma-da`).
-10. **Fin.** « Elle est dans export/. Au moment de poster sur Instagram, ajoute le son tendance directement dans l'app. 👉 À toi : on en fait une autre ? Crée un nouveau dossier en écrivant nouvelle vidéo. »
+2. **Le format de l'image.** Regarde les rushes (`planche.py` donne largeur et hauteur dans `travail/planches/index.json`). Filmé à la verticale : 9:16, rien à demander. Filmé à l'horizontale : demande « Tu t'es filmé à l'horizontale. Je garde ce format (YouTube, LinkedIn, ton écran entier) ou je recadre en vertical pour Reels et TikTok ? 👉 À toi : réponds garde ou vertical. » Garde = `"format_image": "origine"` dans `montage.json` (les incrustations passent alors en fenêtre sur le côté, à droite) ; vertical = `"9:16"`. Autres valeurs possibles : `"4:5"`, `"1:1"`.
+3. **Regarder et écouter.** `python3 "$EDITEUR/outils/planche.py" rushes/ b-roll/` puis regarde CHAQUE planche (`travail/planches/*.jpg`). `python3 "$EDITEUR/outils/transcrire.py" rushes/<fichier>` pour chaque rush où quelqu'un parle, puis lis `travail/<nom>.txt`. Ne décris jamais un plan que tu n'as pas regardé.
+4. **Trier le b-roll.** Deux sources : le dossier `b-roll/` de la vidéo, et la bibliothèque `~/Editeur/b-roll/<thème>/`. Pour la bibliothèque : `python3 "$EDITEUR/outils/planche.py" --bibliotheque` (seuls les nouveaux fichiers sont regardés), puis complète `~/Editeur/b-roll/INDEX.md` pour chaque nouveau fichier (thème, ce qu'on voit, bons moments en secondes). Ensuite, pour CETTE vidéo, écris `travail/b-roll.md` : quelle phrase, quel thème, quel fichier, quel moment. Règles : un b-roll montre ce qui est dit à cet instant ; on pioche d'abord dans le thème qui correspond au sujet (on parle d'entraînement → `entrainement/`) ; jamais de b-roll pris au hasard dans plusieurs thèmes pour « remplir » ; s'il n'y a rien de pertinent, pas de b-roll et tu le dis à l'élève (« Pour ce passage, filme 3 plans de toi à la salle et range-les dans b-roll/entrainement »). Dans `montage.json`, un fichier de la bibliothèque s'écrit `"~/Editeur/b-roll/entrainement/IMG_2201.MOV"`.
+5. **Le plan, validé avant de couper.** En 4 à 6 lignes simples : le texte du début (propose 3 hooks, recommande-en un), ce que tu gardes, ce que tu enlèves (la meilleure prise de chaque phrase, en général la dernière), où vont les plans d'illustration, la musique. « 👉 À toi : réponds ok, ou dis-moi ce que tu changes. »
+6. **Couper.** Écris `travail/garde.json` puis `python3 "$EDITEUR/outils/couper.py" travail/garde.json`. Recette complète : [references/montage-json.md](references/montage-json.md).
+7. **Habiller.** Complète `travail/montage.json` (hook, incrustations, textes, musique) selon le format et la DA. Pour savoir à quel moment de la vidéo finale une phrase est dite : `python3 "$EDITEUR/outils/ou.py" travail/montage.json "la phrase"` (jamais de calcul de tête).
+8. **Vérifier toi-même avant de montrer.** `python3 "$EDITEUR/outils/rendu.py" travail/montage.json --image <t>` au début (hook), sur chaque incrustation, au milieu (sous-titres). Regarde chaque image : texte lisible, rien sur le visage (sous-titres jamais entre les yeux et le menton : si le visage remplit l'écran, descends-les sous le menton avec `ajustements`, au plus bas y = 1420), rien hors de l'écran, sous-titres au-dessus de la barre Instagram. Corrige et recommence avant de montrer quoi que ce soit.
+9. **Montrer.** Rendu final : `python3 "$EDITEUR/outils/rendu.py" travail/montage.json`. Ouvre le dossier `export/`. Puis ouvre le **Studio**, le mini-éditeur visuel : `python3 "$EDITEUR/outils/studio.py" "<dossier de la vidéo>"`, lancé en arrière-plan (il reste ouvert). Une page s'ouvre dans son navigateur : sa vidéo avec le texte du début et les sous-titres en direct, des réglages (texte, tailles, couleurs, surligner le mot dit ou non, majuscules, police), les textes à glisser pour les placer, et le bouton « Fabriquer la vidéo ». Dis-le-lui en une phrase : « J'ai ouvert le Studio dans ton navigateur : tu peux y changer le texte, les couleurs et la place des sous-titres, puis cliquer sur Fabriquer la vidéo. » « Ta vidéo est prête : 38 s, 4 plans d'illustration, texte du début « … ». 👉 À toi : regarde-la. Dis-moi ce que tu changes (« change le texte du début », « enlève la phrase sur… », « plus de b-roll »), ou écris parfait. »
+10. **Corriger.** Chaque retour = une nouvelle version (`-v2`, `-v3`…). Ce qui n'a pas changé est réutilisé, c'est rapide. Quand l'élève corrige le style (taille, couleur, position), propose de l'enregistrer dans sa DA pour toutes les prochaines vidéos (skill `ma-da`).
+11. **Fin.** « Elle est dans export/. Au moment de poster sur Instagram, ajoute le son tendance directement dans l'app. 👉 À toi : on en fait une autre ? Crée un nouveau dossier en écrivant nouvelle vidéo. »
 
 ## Les demandes à côté
 
 | L'élève dit | Tu fais |
 |---|---|
 | Un lien Instagram, TikTok ou YouTube | skill `instagram` (téléchargement, puis : référence de style, b-roll, ou DA) |
-| « Change mon style », « mets mes couleurs », « nouveau template » | skill `ma-da` |
+| « Change mon style », « mets mes couleurs », « nouveau template » | skill `ma-da`, ou le Studio s'il préfère régler à la main |
+| « Ouvre le studio », « je veux régler moi-même » | `studio.py` sur la vidéo en cours (en arrière-plan) |
 | « Mets à jour l'éditeur » | `$EDITEUR/scripts/maj.sh` (Windows : `maj.ps1`), puis : « C'est à jour. Ferme et rouvre Claude pour en profiter. » |
 | « Nouvelle vidéo » | nouveau dossier dans `videos/`, ouvre `rushes/` |
 | « Ça marche pas » | relis l'erreur, corrige toi-même, relance ; l'élève ne voit jamais d'erreur brute |

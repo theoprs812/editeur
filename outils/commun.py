@@ -99,8 +99,60 @@ def mots(source, projet):
     return None
 
 
+def chemin(projet, source):
+    """Un chemin de montage.json : relatif au dossier de la vidéo, absolu, ou ~/... (bibliothèque de l'élève)."""
+    s = str(source)
+    if s.startswith("~"):
+        return Path(os.path.expanduser(s))
+    p = Path(s)
+    return p if p.is_absolute() else Path(projet) / p
+
+
+FORMATS = {"9:16": (1080, 1920), "16:9": (1920, 1080), "4:5": (1080, 1350), "1:1": (1080, 1080)}
+
+
+def format_image(m, projet):
+    """La taille de la vidéo finale : 9:16 par défaut, ou "origine" = le format du premier rush."""
+    f = m.get("format_image", "9:16")
+    if f == "origine":
+        for p in m.get("plans", []):
+            i = sonde(chemin(projet, p["source"]))
+            if i.get("video") and not i.get("image_fixe"):
+                r = i["largeur"] / max(1, i["hauteur"])
+                f = "16:9" if r > 1.2 else "1:1" if r > 0.9 else "4:5" if r > 0.7 else "9:16"
+                break
+        else:
+            f = "9:16"
+    return FORMATS.get(f, FORMATS["9:16"])
+
+
+def adapter_kit(k, w, h):
+    """La DA est écrite pour du 1080x1920. Pour un autre format, on recalcule tailles et positions."""
+    if (w, h) == (1080, 1920):
+        return k
+    paysage = w > h
+    f = 0.72 if paysage else 0.9
+    ry = h / 1920
+    for sec in ("hook", "sous_titres", "textes"):
+        if sec in k:
+            k[sec]["taille"] = round(k[sec].get("taille", 60) * f)
+            k[sec]["contour"] = max(0, round(k[sec].get("contour", 0) * f))
+    if paysage:
+        k["hook"].update(y=round(h * 0.07), marge_cotes=round(w * 0.2))
+        k["sous_titres"].update(y=round(h * 0.86), marge_cotes=round(w * 0.15))
+        k["textes"]["marge_cotes"] = round(w * 0.15)
+        k["fenetre"].update(largeur=round(w * 0.36), y=round(h * 0.1), hauteur_max=round(h * 0.62), x=round(w * 0.6))
+    else:
+        k["hook"]["y"] = round(k["hook"].get("y", 300) * ry)
+        k["sous_titres"]["y"] = round(k["sous_titres"].get("y", 1330) * ry)
+        k["fenetre"].update(y=round(k["fenetre"].get("y", 250) * ry), hauteur_max=round(k["fenetre"].get("hauteur_max", 880) * ry))
+    return k
+
+
 def dossier_projet(fichier):
-    """Le dossier de la vidéo = le parent de travail/ si on est dedans."""
+    """Le dossier de la vidéo : le parent de rushes/, b-roll/, travail/… (même depuis un sous-dossier)."""
     f = Path(os.path.abspath(fichier))
-    d = f.parent
-    return d.parent if d.name in ("travail", "export", "rushes", "b-roll") else d
+    for d in list(f.parents)[:4]:
+        if d.name in ("travail", "export", "rushes", "b-roll", "musique"):
+            return d.parent
+    return f.parent

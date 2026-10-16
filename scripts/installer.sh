@@ -57,7 +57,7 @@ if a yt-dlp; then ok "yt-dlp"; brew upgrade yt-dlp >/dev/null 2>&1 || true; else
 
 # 3. Le dossier de l'élève -------------------------------------------------------
 etape "3/5 Ton dossier Editeur"
-mkdir -p "$ELEVE"/{ma-da/polices,references,musiques,videos}
+mkdir -p "$ELEVE"/{ma-da/polices,references,musiques,videos,b-roll/{entrainement,lifestyle,podcast,bureau}}
 ok "$ELEVE"
 
 # 4. L'Éditeur dans Claude Code ----------------------------------------------------

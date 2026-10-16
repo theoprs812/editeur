@@ -12,7 +12,7 @@ import hashlib, json, re, sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from commun import ffmpeg, lancer, sonde, kit, mots, dossier_projet, POLICES, W, H, FPS, IMAGE_EXT, DOSSIER_ELEVE
+from commun import ffmpeg, lancer, sonde, kit, mots, dossier_projet, chemin, format_image, adapter_kit, POLICES, W, H, FPS, IMAGE_EXT, DOSSIER_ELEVE
 
 TONEMAP = "zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv"
 
@@ -20,13 +20,13 @@ TONEMAP = "zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable
 # ---------- étape 1 : les plans ----------
 
 def clip_plan(projet, p, cache):
-    src = (projet / p["source"]).resolve()
+    src = chemin(projet, p["source"]).resolve()
     info = sonde(src)
     dur = round((p["fin"] - p["debut"]) * FPS) / FPS
     if dur <= 0:
         raise ValueError(f"Plan vide : {p}")
     avec_son = p.get("son", True) and info["son"]
-    cle = hashlib.md5(json.dumps([str(src), src.stat().st_mtime, p["debut"], dur, avec_son, 3]).encode()).hexdigest()[:12]
+    cle = hashlib.md5(json.dumps([str(src), src.stat().st_mtime, p["debut"], dur, avec_son, W, H, 3]).encode()).hexdigest()[:12]
     out = cache / f"{src.stem}-{cle}.mkv"
     if out.exists():
         return out, dur
@@ -57,12 +57,12 @@ def clip_plan(projet, p, cache):
 
 def clip_incrustation(projet, inc, fen, cache):
     """Prépare une incrustation vidéo une seule fois, déjà à sa taille finale (plein écran ou fenêtre)."""
-    src = (projet / inc["source"]).resolve()
+    src = chemin(projet, inc["source"]).resolve()
     info = sonde(src)
     d = round(float(inc.get("duree", 1.0)) * FPS) / FPS
     fenetre = inc.get("mode", "plein") == "fenetre"
     L, Hm = fen.get("largeur", 880), fen.get("hauteur_max", 880)
-    cle = hashlib.md5(json.dumps([str(src), src.stat().st_mtime, inc.get("debut_source", 0), d, fenetre, L, Hm, 2]).encode()).hexdigest()[:12]
+    cle = hashlib.md5(json.dumps([str(src), src.stat().st_mtime, inc.get("debut_source", 0), d, fenetre, L, Hm, W, H, 2]).encode()).hexdigest()[:12]
     out = cache / f"inc-{src.stem}-{cle}.mkv"
     if out.exists():
         return out
@@ -167,7 +167,7 @@ def ecrire_ass(projet, m, k, plans_t, total, chemin):
         anim = "{\\fscx80\\fscy80\\t(0,160,\\fscx100\\fscy100)}" if hk.get("animation") == "pop" else ""
         lignes.append(f"Dialogue: 3,{t_ass(h.get('de', 0))},{t_ass(min(total, h.get('a', 3)))},Hook,,0,0,0,,"
                       f"{{\\an8\\pos({W // 2},{hk.get('y', 300)})}}{anim}{nettoie(h['texte'], hk.get('majuscules'))}")
-    ys = {"haut": 420, "centre": H // 2, "bas": 1350}
+    ys = {"haut": round(H * 0.22), "centre": H // 2, "bas": round(H * 0.7)}
     for t in m.get("textes", []):
         y = t.get("y", ys.get(t.get("position", "centre"), H // 2))
         txt = nettoie(t["texte"], tx.get("majuscules")).replace("\\n", "\\N")
@@ -197,14 +197,32 @@ def echappe_filtre(p):
     return str(p).replace("\\", "/").replace(":", "\\:").replace("'", "\\'").replace(",", "\\,")
 
 
-def rendre(montage_path, apercu=False, image=None):
+def preparer(montage_path):
+    """Lit montage.json, choisit le format d'image, charge la DA adaptée à ce format. Sert aussi au studio."""
+    global W, H
     montage_path = Path(montage_path).resolve()
     projet = dossier_projet(montage_path)
     m = json.loads(montage_path.read_text(encoding="utf-8"))
-    k = kit(m.get("da", "auto"), projet)
+    W, H = format_image(m, projet)
+    k = adapter_kit(kit(m.get("da", "auto"), projet), W, H)
     for section, valeurs in (m.get("ajustements") or {}).items():   # réglages de DA pour CETTE vidéo seulement
         if isinstance(valeurs, dict) and isinstance(k.get(section), dict):
             k[section].update(valeurs)
+    return montage_path, projet, m, k
+
+
+def plans_temps(m):
+    """[(plan, début sur la vidéo finale, durée)] sans rien encoder."""
+    out, off = [], 0.0
+    for p in m.get("plans", []):
+        dur = round((p["fin"] - p["debut"]) * FPS) / FPS
+        out.append((p, off, dur))
+        off += dur
+    return out, off
+
+
+def rendre(montage_path, apercu=False, image=None, sans_textes=False, sortie=None):
+    montage_path, projet, m, k = preparer(montage_path)
     travail = projet / "travail"
     # cache commun à toutes les vidéos de l'élève : un rush déjà préparé n'est jamais refait
     cache = DOSSIER_ELEVE / ".cache" if DOSSIER_ELEVE.exists() else travail / "cache"
@@ -241,20 +259,21 @@ def rendre(montage_path, apercu=False, image=None):
                     f"if(lte(hypot({R}-(W/2-abs(W/2-X)),{R}-(H/2-abs(H/2-Y))),{R}),255,0),255)'")
             filt.append(f"[{n_in}:v]format=rgba,{coin},"
                         f"fade=t=in:st=0:d=0.12:alpha=1,setpts=PTS-STARTPTS+{a}/TB[i{j}]")
-            pos = f"x=(W-w)/2:y='{fen.get('y', 260)}+40*max(0,1-(t-{a})/0.15)'"
+            px = fen["x"] if "x" in fen else "(W-w)/2"
+            pos = f"x={px}:y='{fen.get('y', 260)}+40*max(0,1-(t-{a})/0.15)'"
         else:
             filt.append(f"[{n_in}:v]setpts=PTS-STARTPTS+{a}/TB[i{j}]")
             pos = "x=0:y=0"
         filt.append(f"{vlab}[i{j}]overlay={pos}:enable='between(t,{a},{a + d})':eof_action=pass[b{j}]")
         vlab, n_in = f"[b{j}]", n_in + 1
-    fin_v = f"subtitles='{echappe_filtre(ass)}':fontsdir='{echappe_filtre(dossier_polices(travail, k))}'"
+    fin_v = "null" if sans_textes else f"subtitles='{echappe_filtre(ass)}':fontsdir='{echappe_filtre(dossier_polices(travail, k))}'"
     if apercu:
-        fin_v += ",scale=540:960"
+        fin_v += f",scale={W // 2}:{H // 2}"
     filt.append(f"{vlab}{fin_v},format=yuv420p[vout]")
 
     mu = m.get("musique") if image is None else None
     if mu and mu.get("source"):
-        cmd += ["-stream_loop", "-1", "-ss", f"{mu.get('debut', 0):.3f}", "-i", str((projet / mu["source"]).resolve())]
+        cmd += ["-stream_loop", "-1", "-ss", f"{mu.get('debut', 0):.3f}", "-i", str(chemin(projet, mu["source"]).resolve())]
         niveau = float(mu.get("niveau_db", k["musique"]["niveau_db"]))   # en LU sous la voix (0 = musique au premier plan)
         fin_f = max(0.0, total - 1.2)
         filt.append(f"[{n_in}:a]aresample=48000,aformat=channel_layouts=stereo,atrim=0:{total:.3f},"
@@ -271,10 +290,12 @@ def rendre(montage_path, apercu=False, image=None):
         out.parent.mkdir(exist_ok=True)
         cmd += ["-filter_complex", ";".join(filt[:-1]), "-map", "[vout]", "-ss", f"{float(image):.3f}", "-frames:v", "1", str(out)]
     else:
-        sortie = m.get("sortie", "export/video-v1.mp4")
+        sortie_forcee, sortie = sortie, m.get("sortie", "export/video-v1.mp4")
         out = projet / sortie
         if apercu:
             out = travail / ("apercu-" + Path(sortie).name)
+        if sortie_forcee:
+            out = Path(sortie_forcee)
         out.parent.mkdir(parents=True, exist_ok=True)
         enc = ["-c:v", "libx264", "-preset", "ultrafast" if apercu else "medium", "-crf", "26" if apercu else "18",
                "-r", str(FPS), "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart"]
