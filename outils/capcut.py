@@ -142,8 +142,9 @@ def construire(cc, script, projet, m, k, W, H, plans_t, total, dossier_media):
         avec_son = p.get("son", True) is not False and info.get("son")
         if avec_son and voix_ref is None:
             voix_ref = (src, p["debut"])
-        seg = cc.VideoSegment(media(src), cc.trange(round(off * US), round(dur * US)),
-                              source_timerange=cc.trange(round(p["debut"] * US), round(dur * US)),
+        t0, t1 = round(off * US), round((off + dur) * US)   # bornes arrondies une fois : jamais de chevauchement
+        seg = cc.VideoSegment(media(src), cc.trange(t0, t1 - t0),
+                              source_timerange=cc.trange(round(p["debut"] * US), t1 - t0),
                               volume=1.0 if avec_son else 0.0, clip_settings=reglage)
         script.add_segment(seg)
 
