@@ -51,7 +51,10 @@ ok "Homebrew"
 etape "2/5 Les outils vidéo"
 a python3 || brew install python
 a git || brew install git
-if a ffmpeg && ffmpeg -hide_banner -filters 2>/dev/null | grep -q " subtitles "; then ok "ffmpeg"; else brew install ffmpeg; ok "ffmpeg"; fi
+# Le ffmpeg « normal » de Homebrew n'a plus les sous-titres (libass) : il faut ffmpeg-full.
+ff_ok() { for f in /opt/homebrew/opt/ffmpeg-full/bin/ffmpeg /usr/local/opt/ffmpeg-full/bin/ffmpeg "$(command -v ffmpeg)" "$HOME/.local/bin/ffmpeg"; do
+  [[ -x "$f" ]] && "$f" -hide_banner -filters 2>/dev/null | grep -q " subtitles " && "$f" -hide_banner -filters 2>/dev/null | grep -q " zscale " && return 0; done; return 1; }
+if ff_ok; then ok "ffmpeg"; else brew install ffmpeg-full; ok "ffmpeg (complet)"; fi
 if a whisper-cli; then ok "whisper"; else brew install whisper-cpp; ok "whisper"; fi
 if a yt-dlp; then ok "yt-dlp"; brew upgrade yt-dlp >/dev/null 2>&1 || true; else brew install yt-dlp; ok "yt-dlp"; fi
 

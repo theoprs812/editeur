@@ -14,17 +14,20 @@ IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp", ".heic"}
 
 
 def outil(nom):
-    """Trouve ffmpeg, ffprobe, yt-dlp, whisper-cli même hors du PATH (apps de bureau)."""
+    """Trouve ffmpeg, ffprobe, yt-dlp, whisper-cli même hors du PATH (apps de bureau).
+    ffmpeg : on prend d'abord ffmpeg-full (Homebrew), le seul qui a les sous-titres et les couleurs iPhone."""
+    candidats = []
+    if nom in ("ffmpeg", "ffprobe"):
+        candidats += [f"/opt/homebrew/opt/ffmpeg-full/bin/{nom}", f"/usr/local/opt/ffmpeg-full/bin/{nom}"]
     p = shutil.which(nom)
     if p:
-        return p
-    for d in ["/opt/homebrew/bin", "/usr/local/bin", str(Path.home() / ".local/bin")]:
-        c = Path(d) / nom
-        if c.exists():
-            return str(c)
+        candidats.append(p)
+    candidats += [str(Path(d) / nom) for d in ["/opt/homebrew/bin", "/usr/local/bin", str(Path.home() / ".local/bin")]]
     if platform.system() == "Windows":
-        for c in Path(os.environ.get("LOCALAPPDATA", "")).glob(f"Microsoft/WinGet/Packages/*/**/{nom}.exe"):
-            return str(c)
+        candidats += [str(c) for c in Path(os.environ.get("LOCALAPPDATA", "")).glob(f"Microsoft/WinGet/Packages/*/**/{nom}.exe")]
+    for c in candidats:
+        if c and Path(c).exists():
+            return c
     return None
 
 
