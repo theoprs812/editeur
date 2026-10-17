@@ -13,7 +13,7 @@ set -euo pipefail
 
 RACINE="$(cd "$(dirname "$0")/.." && pwd)"
 CODE=""
-[[ "${1:-}" == "--code" ]] && CODE="${2:-}"   # code d'accès à la banque de musiques (dans le message d'installation du tuto)
+[[ "${1:-}" == "--code" ]] && CODE="${2:-}"   # code d'accès à la banque de musiques (optionnel : le tuto le fait coller par l'élève lui-même, hors Claude)
 ELEVE="${EDITEUR_DOSSIER:-$HOME/Editeur}"
 MODELES="$HOME/Library/Application Support/whisper.cpp/models"
 MODELE="ggml-large-v3-turbo-q5_0.bin"

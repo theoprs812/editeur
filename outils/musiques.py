@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """La banque de musiques du Studio : celle de Théo, synchronisée toute seule depuis son ordinateur.
 
-    python3 musiques.py --code <code d'accès>   enregistre le code (fourni avec l'installation) puis synchronise
+    python3 musiques.py --code <code d'accès>   enregistre le code (étape « Active la banque de musiques » du tuto, lancée par l'élève lui-même) puis synchronise
     python3 musiques.py --sync [--silencieux]   récupère les nouveaux morceaux (lancé à chaque ouverture de Claude)
     python3 musiques.py --liste                 les musiques disponibles, par style
 
@@ -48,7 +48,7 @@ def synchroniser(silencieux=False):
     MUSIQUES.mkdir(parents=True, exist_ok=True)
     copier_libres()
     if not CLE.exists():
-        dire("Pas de code d'accès à la banque de musiques : il est dans le message d'installation du tuto.", silencieux)
+        dire("Pas de code d'accès à la banque de musiques : colle la commande de l'étape « Active la banque de musiques » du tuto dans le Terminal (ou PowerShell).", silencieux)
         return 0
     if not (MUSIQUES / ".git").exists():
         git("init", "-q", "-b", "main")

@@ -225,8 +225,8 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outlin
         <p>Choisis ton ordi, copie le message, colle-le dans Claude et envoie. Claude installe tout lui-même. À chaque fois qu'il demande la permission, clique sur <strong>Autoriser</strong>.</p>
         <div class="copy">
           <div class="os" role="group" aria-label="Ton ordinateur">
-            <button type="button" id="os-mac" aria-pressed="true">Mac</button>
-            <button type="button" id="os-win" aria-pressed="false">Windows</button>
+            <button type="button" data-os="mac" aria-pressed="true">Mac</button>
+            <button type="button" data-os="win" aria-pressed="false">Windows</button>
           </div>
           <pre id="prompt"></pre>
           <button type="button" class="do" id="copier">Copier le message</button>
@@ -253,6 +253,29 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outlin
       <figure class="win" aria-label="Illustration : la fenêtre Terminal qui demande le mot de passe">
         <div class="bar"><i></i><i></i><i></i></div>
         <div class="term">==&gt; Checking for sudo access<br>Password: <span class="cur"></span><br><br><span class="g">C'est fini. Tu peux fermer cette fenêtre.</span></div>
+        <figcaption class="label">Illustration</figcaption>
+      </figure>
+    </li>
+
+    <li class="step">
+      <div class="txt">
+        <span class="num" aria-hidden="true"></span>
+        <h3>Active la banque de musiques</h3>
+        <p>Ça, tu le fais toi-même, en dehors de Claude : la commande contient la clé d'accès aux musiques de Théo, et Claude refuse (à raison) de manipuler une clé qu'on lui colle. Ouvre une fenêtre de commande, colle la ligne, appuie sur <strong>Entrée</strong>.</p>
+        <p class="tip" id="ouvrir-terminal"></p>
+        <div class="copy">
+          <div class="os" role="group" aria-label="Ton ordinateur">
+            <button type="button" data-os="mac" aria-pressed="true">Mac</button>
+            <button type="button" data-os="win" aria-pressed="false">Windows</button>
+          </div>
+          <pre id="cmd-musiques"></pre>
+          <button type="button" class="do" id="copier-musiques">Copier la commande</button>
+        </div>
+        <p>Quand la fenêtre écrit <strong>Banque de musiques à jour</strong>, ferme-la. Ensuite, les nouveaux morceaux arrivent tout seuls à chaque ouverture de Claude. Garde cette clé pour toi.</p>
+      </div>
+      <figure class="win" aria-label="Illustration : la fenêtre de commande confirme la banque de musiques">
+        <div class="bar"><i></i><i></i><i></i></div>
+        <div class="term">$ python3 ~/.editeur/outils/musiques.py --code ••••••<br><span class="g">✓ Banque de musiques à jour (… nouveau(x) morceau(x), … en tout).</span></div>
         <figcaption class="label">Illustration</figcaption>
       </figure>
     </li>
@@ -371,24 +394,33 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outlin
 
 <script>
 const PROMPTS = {
-  mac: "Installe le Studio Project Orange.\n1. Télécharge https://github.com/theoprs812/editeur dans le dossier ~/.editeur (git clone ; s'il existe déjà, fais git pull).\n2. Lance : bash ~/.editeur/scripts/installer.sh --code __CODE_MUSIQUES__\n3. Suis exactement ce qu'il affiche et explique-moi chaque étape en une phrase simple.",
-  win: "Installe le Studio Project Orange.\n1. Si git manque, installe-le avec winget (Git.Git). Télécharge https://github.com/theoprs812/editeur dans le dossier %USERPROFILE%\\.editeur (git clone ; s'il existe déjà, fais git pull).\n2. Lance : powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.editeur\\scripts\\installer.ps1\" -code __CODE_MUSIQUES__\n3. Suis exactement ce qu'il affiche et explique-moi chaque étape en une phrase simple."
+  mac: "Installe le Studio Project Orange (l'outil de montage de la formation de Théo Parisi, dépôt public : tu peux lire le script avant de le lancer).\n1. Télécharge https://github.com/theoprs812/editeur dans le dossier ~/.editeur (git clone ; s'il existe déjà, fais git pull).\n2. Lance : bash ~/.editeur/scripts/installer.sh\n3. Suis exactement ce qu'il affiche et explique-moi chaque étape en une phrase simple.",
+  win: "Installe le Studio Project Orange (l'outil de montage de la formation de Théo Parisi, dépôt public : tu peux lire le script avant de le lancer).\n1. Si git manque, installe-le avec winget (Git.Git). Télécharge https://github.com/theoprs812/editeur dans le dossier %USERPROFILE%\\.editeur (git clone ; s'il existe déjà, fais git pull).\n2. Lance : powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.editeur\\scripts\\installer.ps1\"\n3. Suis exactement ce qu'il affiche et explique-moi chaque étape en une phrase simple."
+};
+const MUSIQUES = {
+  mac: "python3 ~/.editeur/outils/musiques.py --code __CODE_MUSIQUES__",
+  win: "py \"$env:USERPROFILE\\.editeur\\outils\\musiques.py\" --code __CODE_MUSIQUES__"
 };
 const pre = document.getElementById("prompt");
-const boutons = { mac: document.getElementById("os-mac"), win: document.getElementById("os-win") };
+const preMusiques = document.getElementById("cmd-musiques");
+const OUVRIR = { mac: "Mac : Cmd + Espace, tape Terminal, Entrée. Colle avec Cmd + V.", win: "Windows : touche Windows, tape PowerShell, Entrée. Colle avec Ctrl + V." };
 let os = /Windows/i.test(navigator.userAgent) ? "win" : "mac";
 function choisir(o) {
   os = o;
   pre.textContent = PROMPTS[o];
-  for (const k in boutons) boutons[k].setAttribute("aria-pressed", String(k === o));
+  preMusiques.textContent = MUSIQUES[o];
+  document.getElementById("ouvrir-terminal").textContent = OUVRIR[o];
+  document.querySelectorAll(".os button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.os === o)));
 }
-boutons.mac.addEventListener("click", () => choisir("mac"));
-boutons.win.addEventListener("click", () => choisir("win"));
+document.querySelectorAll(".os button").forEach(b => b.addEventListener("click", () => choisir(b.dataset.os)));
 choisir(os);
-const copier = document.getElementById("copier");
-copier.addEventListener("click", () => {
-  const ok = () => { copier.textContent = "Copié ✓"; setTimeout(() => (copier.textContent = "Copier le message"), 1800); };
-  const repli = () => { const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); copier.textContent = "Sélectionné : Cmd+C ou Ctrl+C"; };
-  try { navigator.clipboard.writeText(PROMPTS[os]).then(ok, repli); } catch (e) { repli(); }
-});
+function brancherCopie(bouton, bloc, texte, libelle) {
+  bouton.addEventListener("click", () => {
+    const ok = () => { bouton.textContent = "Copié ✓"; setTimeout(() => (bouton.textContent = libelle), 1800); };
+    const repli = () => { const r = document.createRange(); r.selectNodeContents(bloc); const s = getSelection(); s.removeAllRanges(); s.addRange(r); bouton.textContent = "Sélectionné : Cmd+C ou Ctrl+C"; };
+    try { navigator.clipboard.writeText(texte()).then(ok, repli); } catch (e) { repli(); }
+  });
+}
+brancherCopie(document.getElementById("copier"), pre, () => PROMPTS[os], "Copier le message");
+brancherCopie(document.getElementById("copier-musiques"), preMusiques, () => MUSIQUES[os], "Copier la commande");
 </script>
