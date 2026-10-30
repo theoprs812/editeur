@@ -1,4 +1,4 @@
-# Vérifie que tout est là (Windows), sans rien changer. Code de sortie 0 = prêt.
+﻿# Vérifie que tout est là (Windows), sans rien changer. Code de sortie 0 = prêt.
 $m = 0
 function A($c) { [bool](Get-Command $c -ErrorAction SilentlyContinue) }
 foreach ($c in "ffmpeg","yt-dlp") { if (A $c) { Write-Host "  OK  $c" } else { Write-Host "  manque $c"; $m = 1 } }

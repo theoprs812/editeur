@@ -1,4 +1,4 @@
-# Installe le Studio de Project Orange sur Windows 10/11. On peut le relancer sans risque.
+﻿# Installe le Studio de Project Orange sur Windows 10/11. On peut le relancer sans risque.
 #   powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.editeur\scripts\installer.ps1"
 param([string]$code = "")
 $ErrorActionPreference = "Continue"

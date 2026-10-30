@@ -1,7 +1,8 @@
 {
+  "description": "Met le Studio à jour (git pull) et récupère les nouvelles musiques à chaque ouverture de Claude Code, en arrière-plan. Sous Windows, Claude Code lance ce hook dans Git Bash et maj.sh passe la main à maj.ps1.",
   "hooks": {
     "SessionStart": [
-      {"hooks": [{"type": "command", "command": "bash \"$HOME/.editeur/scripts/maj.sh\" --silencieux >/dev/null 2>&1 &", "timeout": 5}]}
+      {"hooks": [{"type": "command", "command": "bash \"$HOME/.editeur/scripts/maj.sh\" --silencieux >/dev/null 2>&1", "async": true, "timeout": 300}]}
     ]
   }
 }

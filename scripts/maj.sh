@@ -4,8 +4,17 @@
 #   bash ~/.editeur/scripts/maj.sh [--silencieux]
 #   bash ~/.editeur/scripts/maj.sh --depot      transforme seulement ~/.editeur en vrai clone git
 #                                               (Studio téléchargé en archive zip sur un Mac sans git)
+#
+# Sous Windows (Git Bash, celui qui lance les hooks de Claude Code), tout passe par maj.ps1.
 RACINE="$(cd "$(dirname "$0")/.." && pwd)"
 DEPOT="https://github.com/theoprs812/editeur.git"
+
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*)
+    ps1="$RACINE/scripts/maj.ps1"
+    command -v cygpath >/dev/null 2>&1 && ps1="$(cygpath -w "$ps1")"
+    exec powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$ps1" "$@" ;;
+esac
 
 SILENCIEUX=0; DEPOT_SEUL=0
 for a in "$@"; do
