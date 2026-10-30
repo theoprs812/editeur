@@ -102,6 +102,35 @@ def mots(source, projet):
     return None
 
 
+def mots_sur_la_video(projet, plans_t):
+    """Les mots dits, replacés sur le temps de la vidéo finale : [{"s", "e", "w"}] triés.
+    plans_t = [(plan, début sur la vidéo finale, durée)]. Les temps de Whisper débordent souvent sur les blancs
+    que couper.py a enlevés : un mot va au plan qui en garde le plus (au moins 0,15 s ou 40 % du mot), une seule
+    fois parmi des plans voisins dans le fichier, mais deux fois si le même passage est vraiment repris."""
+    par_source = {}
+    for p, off, dur in plans_t:
+        if p.get("son", True) is not False:
+            par_source.setdefault(p["source"], []).append((p, off, dur))
+    tl = []
+    for source, liste in par_source.items():
+        for m in mots(source, projet) or []:
+            d = max(0.01, m["e"] - m["s"])
+            candidats = []
+            for p, off, dur in liste:
+                commun_ = min(m["e"], p["debut"] + dur) - max(m["s"], p["debut"])
+                if commun_ >= min(0.15, 0.4 * d) - 1e-6:
+                    candidats.append((commun_, p, off, dur))
+            pris = []
+            for commun_, p, off, dur in sorted(candidats, key=lambda c: -c[0]):
+                if any(max(p["debut"], q["debut"]) - min(p["debut"] + dur, q["debut"] + qd) < 1.0 for _, q, _, qd in pris):
+                    continue
+                pris.append((commun_, p, off, dur))
+                s = off + max(0.0, m["s"] - p["debut"])
+                e = min(off + dur, off + (m["e"] - p["debut"]))
+                tl.append({"s": s, "e": max(e, s + 0.05), "w": m["w"]})
+    return sorted(tl, key=lambda x: x["s"])
+
+
 def chemin(projet, source):
     """Un chemin de montage.json : relatif au dossier de la vidéo, absolu, ou ~/... (bibliothèque de l'élève)."""
     s = str(source)

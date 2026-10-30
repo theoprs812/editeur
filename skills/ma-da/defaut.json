@@ -51,8 +51,8 @@
   },
   "coupes": {
     "blanc_max_yap": 0.25,
-    "blanc_max_normal": 0.5,
-    "marge": 0.08
+    "blanc_max_normal": 0.35,
+    "marge": 0.12
   },
   "musique": {
     "niveau_db": -15

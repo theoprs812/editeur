@@ -10,7 +10,7 @@ import json, re, sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from commun import mots, dossier_projet, FPS
+from commun import mots_sur_la_video, dossier_projet, FPS
 
 
 def norm(w):
@@ -21,14 +21,12 @@ def timeline(m_path):
     m_path = Path(m_path).resolve()
     projet = dossier_projet(m_path)
     m = json.loads(m_path.read_text(encoding="utf-8"))
-    tl, off = [], 0.0
+    plans_t, off = [], 0.0
     for p in m["plans"]:
         dur = round((p["fin"] - p["debut"]) * FPS) / FPS
-        if p.get("son", True) is not False:
-            for w in mots(p["source"], projet) or []:
-                if w["s"] >= p["debut"] - 0.02 and w["e"] <= p["fin"] + 0.05:
-                    tl.append({"t": round(off + max(0, w["s"] - p["debut"]), 2), "fin": round(off + min(dur, w["e"] - p["debut"]), 2), "w": w["w"]})
+        plans_t.append((p, off, dur))
         off += dur
+    tl = [{"t": round(w["s"], 2), "fin": round(w["e"], 2), "w": w["w"]} for w in mots_sur_la_video(projet, plans_t)]
     return tl, off
 
 

@@ -12,7 +12,7 @@ import hashlib, json, re, sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from commun import ffmpeg, lancer, sonde, kit, mots, dossier_projet, chemin, fichier_police, format_image, adapter_kit, POLICES, W, H, FPS, IMAGE_EXT, DOSSIER_ELEVE
+from commun import ffmpeg, lancer, sonde, kit, mots_sur_la_video, dossier_projet, chemin, fichier_police, format_image, adapter_kit, POLICES, W, H, FPS, IMAGE_EXT, DOSSIER_ELEVE
 
 TONEMAP = "zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv"
 
@@ -110,16 +110,7 @@ def nettoie(txt, maj):
 
 def blocs_sous_titres(projet, plans_t, n_max):
     """Les mots de toutes les sources, replacés sur le temps de la vidéo finale, groupés par 2-3."""
-    tl = []
-    for p, off, dur in plans_t:
-        if p.get("son", True) is False:
-            continue
-        ws = mots(p["source"], projet) or []
-        for m in ws:
-            if m["s"] >= p["debut"] - 0.02 and m["e"] <= p["fin"] + 0.05:
-                s = off + max(0, m["s"] - p["debut"])
-                e = min(off + dur, off + (m["e"] - p["debut"]))
-                tl.append({"s": s, "e": max(e, s + 0.05), "w": m["w"]})
+    tl = mots_sur_la_video(projet, plans_t)
     blocs, cur = [], []
     for i, m in enumerate(tl):
         cur.append(m)

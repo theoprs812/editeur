@@ -72,5 +72,5 @@ Tous les temps sont en secondes. `debut` / `fin` = temps DANS le fichier source.
 }
 ```
 
-`style` règle la coupe des blancs : `yap` = aucun blanc (tout ce qui dépasse 0,25 s saute), `normal` = blancs de plus de 0,5 s coupés.
+`style` règle la coupe des blancs : `normal` = tout blanc de plus de 0,35 s est coupé en gardant 0,12 s d'air de chaque côté, `yap` = pareil dès 0,25 s, `garder-blancs` = on n'enlève que les « euh » et les ratés, les silences voulus restent. Dans tous les cas la vidéo commence pile sur le premier mot (ni blanc ni « euh » avant), finit 0,4 s après le dernier, et les coupes sont recalées sur le vrai silence du son : elles ne mordent jamais sur un mot.
 Claude choisit les passages (la meilleure prise de chaque phrase, en général la dernière), le script fait la coupe fine au mot.
