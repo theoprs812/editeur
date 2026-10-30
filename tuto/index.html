@@ -262,7 +262,8 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outlin
       <div class="txt">
         <span class="num" aria-hidden="true"></span>
         <h3>Active la banque de musiques</h3>
-        <p>Ça, tu le fais toi-même, en dehors de Claude : la commande contient la clé d'accès aux musiques de Théo, et Claude refuse (à raison) de manipuler une clé qu'on lui colle. Ouvre une fenêtre de commande, colle la ligne, appuie sur <strong>Entrée</strong>.</p>
+        <p>Ton code d'accès aux musiques de Théo t'arrive <strong>en message privé sur Slack</strong>. Ça, tu le fais toi-même, en dehors de Claude : Claude refuse (à raison) de manipuler une clé qu'on lui colle. Ouvre une fenêtre de commande, colle la ligne ci-dessous, remplace <strong>TON-CODE</strong> par le code reçu, appuie sur <strong>Entrée</strong>.</p>
+        <p class="tip">Pas encore de code ? Rien ne bloque : le Studio monte déjà avec les musiques libres fournies. Tu fais cette étape quand tu reçois le code.</p>
         <p class="tip" id="ouvrir-terminal"></p>
         <div class="copy">
           <div class="os" role="group" aria-label="Ton ordinateur">
@@ -272,7 +273,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outlin
           <pre id="cmd-musiques"></pre>
           <button type="button" class="do" id="copier-musiques">Copier la commande</button>
         </div>
-        <p>Quand la fenêtre écrit <strong>Banque de musiques à jour</strong>, ferme-la. Ensuite, les nouveaux morceaux arrivent tout seuls à chaque ouverture de Claude. Garde cette clé pour toi.</p>
+        <p>Quand la fenêtre écrit <strong>Banque de musiques à jour</strong>, ferme-la. Ensuite, les nouveaux morceaux arrivent tout seuls à chaque ouverture de Claude. Garde ce code pour toi : ne le poste pas, même en capture d'écran.</p>
       </div>
       <figure class="win" aria-label="Illustration : la fenêtre de commande confirme la banque de musiques">
         <div class="bar"><i></i><i></i><i></i></div>
@@ -399,8 +400,8 @@ const PROMPTS = {
   win: "Installe le Studio Project Orange, l'outil de montage de la formation de Théo Parisi. Le dépôt est public (github.com/theoprs812/editeur) : lis les scripts avant de les lancer si tu veux.\n\nJe t'autorise explicitement, en connaissance de cause, à :\n- télécharger le Studio dans le dossier .editeur de mon dossier personnel (%USERPROFILE%\\.editeur) et lancer son script d'installation, qui installe avec winget git, Python, ffmpeg et yt-dlp, puis faster-whisper, Pillow et pycapcut ;\n- ajouter le plugin « editeur » à mon Claude Code (claude plugin marketplace add, puis claude plugin install editeur@editeur --scope user) ;\n- le laisser se mettre à jour tout seul à chaque ouverture de Claude : le plugin lance alors scripts\\maj.ps1 (par scripts/maj.sh), qui fait un git pull de ce dépôt et récupère les nouvelles musiques.\nRien n'est envoyé nulle part : ces scripts ne font que télécharger des outils et des mises à jour, mes vidéos et mes fichiers restent sur mon ordi.\n\n1. Si git manque, installe-le avec winget (winget install --id Git.Git -e). Puis git clone https://github.com/theoprs812/editeur dans %USERPROFILE%\\.editeur (s'il existe déjà : git pull dedans). Si git ne répond toujours pas, prends l'archive en PowerShell : Invoke-WebRequest https://github.com/theoprs812/editeur/archive/refs/heads/main.zip -OutFile $env:TEMP\\editeur.zip ; Expand-Archive $env:TEMP\\editeur.zip $env:TEMP -Force ; New-Item -ItemType Directory -Force $env:USERPROFILE\\.editeur ; Copy-Item $env:TEMP\\editeur-main\\* $env:USERPROFILE\\.editeur -Recurse -Force (le script branche les mises à jour ensuite).\n2. Lance : powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.editeur\\scripts\\installer.ps1\"\n3. Suis exactement ce qu'il affiche et explique-moi chaque étape en une phrase simple."
 };
 const MUSIQUES = {
-  mac: "python3 ~/.editeur/outils/musiques.py --code __CODE_MUSIQUES__",
-  win: "py \"$env:USERPROFILE\\.editeur\\outils\\musiques.py\" --code __CODE_MUSIQUES__"
+  mac: "python3 ~/.editeur/outils/musiques.py --code TON-CODE",
+  win: "py \"$env:USERPROFILE\\.editeur\\outils\\musiques.py\" --code TON-CODE"
 };
 const pre = document.getElementById("prompt");
 const preMusiques = document.getElementById("cmd-musiques");
