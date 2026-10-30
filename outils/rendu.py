@@ -26,15 +26,17 @@ def clip_plan(projet, p, cache):
     if dur <= 0:
         raise ValueError(f"Plan vide : {p}")
     avec_son = p.get("son", True) and info["son"]
-    cle = hashlib.md5(json.dumps([str(src), src.stat().st_mtime, p["debut"], dur, avec_son, W, H, 3]).encode()).hexdigest()[:12]
+    cle = hashlib.md5(json.dumps([str(src), src.stat().st_mtime, p["debut"], dur, avec_son, W, H, 4]).encode()).hexdigest()[:12]
     out = cache / f"{src.stem}-{cle}.mkv"
     if out.exists():
         return out, dur
     cmd = [ffmpeg(), "-y", "-v", "error"]
     if info.get("video") and not info.get("image_fixe"):
         cmd += ["-ss", f"{p['debut']:.3f}", "-i", str(src)]
+        # start_time=0 : la première image tombe à 0 comme le son (sinon elle glisse parfois d'une image et le plan
+        # dure une image de trop : tout le montage se décale, les sous-titres arrivent en avance sur la voix)
         vf = (TONEMAP + "," if info.get("hdr") else "") + \
-            f"fps={FPS},scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1,format=yuv420p"
+            f"fps={FPS}:start_time=0,scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1,format=yuv420p"
         vmap = "0:v:0"
     elif info.get("image_fixe"):
         cmd += ["-loop", "1", "-t", f"{dur:.3f}", "-i", str(src)]
@@ -339,7 +341,7 @@ def rendre(montage_path, apercu=False, image=None, sans_textes=False, sortie=Non
     for i, p in enumerate(m["plans"]):
         clip, dur = clip_plan(projet, p, cache)
         plans_t.append((p, off, dur))
-        liste.append(f"file '{clip.as_posix()}'")
+        liste += [f"file '{clip.as_posix()}'", f"duration {dur:.6f}"]   # durée exacte : pas d'arrondi qui s'additionne
         off += dur
         print(f"\r  plans prêts : {i + 1}/{len(m['plans'])}", end="", flush=True)
     print()
@@ -392,14 +394,16 @@ def rendre(montage_path, apercu=False, image=None, sans_textes=False, sortie=Non
         cmd += ["-stream_loop", "-1", "-ss", f"{mu.get('debut', 0):.3f}", "-i", str(chemin(projet, mu["source"]).resolve())]
         niveau = float(mu.get("niveau_db", k["musique"]["niveau_db"]))   # en LU sous la voix (0 = musique au premier plan)
         fin_f = max(0.0, total - 1.2)
-        filt.append(f"[{n_in}:a]aresample=48000,aformat=channel_layouts=stereo,atrim=0:{total:.3f},"
+        filt.append(f"[{n_in}:a]aresample=48000,aformat=channel_layouts=stereo,atrim=0:{total:.3f},apad=pad_dur=4,"
                     f"loudnorm=I={-16 + niveau:.1f}:TP=-2:LRA=11,afade=t=in:d=0.02,afade=t=out:st={fin_f:.3f}:d=1.2[mus]")
-        filt.append("[0:a]loudnorm=I=-16:TP=-2:LRA=11[voix]")
+        filt.append("[0:a]apad=pad_dur=4,loudnorm=I=-16:TP=-2:LRA=11[voix]")
         filt.append("[voix][mus]amix=inputs=2:duration=first:normalize=0[mix]")
         alab = "[mix]"
     else:
         alab = "[0:a]"
-    filt.append(f"{alab}loudnorm=I=-14:TP=-1.5:LRA=11,aresample=48000[aout]")
+    # loudnorm garde 3 s en mémoire et, en se vidant à la fin, décale les dernières secondes (jusqu'à ~80 ms de retard
+    # du son sur l'image) : on lui donne 4 s de silence à vider, qu'on recoupe ensuite.
+    filt.append(f"{alab}apad=pad_dur=4,loudnorm=I=-14:TP=-1.5:LRA=11,aresample=48000,atrim=0:{total:.4f}[aout]")
 
     if image is not None:
         out = travail / "images" / f"image-{float(image):06.2f}.png"
