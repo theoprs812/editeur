@@ -14,6 +14,8 @@ if (-not (A winget)) { Write-Host "winget manque : mets Windows à jour (Microso
 
 Etape "1/4 Les outils"
 if (-not (A git)) { Winget "Git.Git" }; Ok "git"
+# Studio téléchargé en zip (sans git) : le dossier devient un vrai clone, pour les mises à jour.
+if (-not (Test-Path (Join-Path $Racine ".git"))) { & (Join-Path $PSScriptRoot "maj.ps1") --depot }
 if (-not ((A py) -or (A python))) { Winget "Python.Python.3.12" }; Ok "python"
 if (-not (A ffmpeg)) { Winget "Gyan.FFmpeg" }; Ok "ffmpeg"
 if (-not (A yt-dlp)) { Winget "yt-dlp.yt-dlp" }; Ok "yt-dlp"

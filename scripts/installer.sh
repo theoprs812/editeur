@@ -4,7 +4,7 @@
 #   bash ~/.editeur/scripts/installer.sh
 #
 # 1. Homebrew (le seul moment où il faut le mot de passe du Mac)
-# 2. ffmpeg (lire et fabriquer les vidéos), whisper (transcrire), yt-dlp (télécharger les reels)
+# 2. git (mises à jour), ffmpeg (lire et fabriquer les vidéos), whisper (transcrire), yt-dlp (télécharger les reels)
 # 3. Le modèle de transcription (~550 Mo, en dernier)
 # 4. Le dossier ~/Editeur
 # 5. Le Studio dans Claude Code
@@ -52,7 +52,10 @@ ok "Homebrew"
 # 2. Les outils ---------------------------------------------------------------
 etape "2/5 Les outils vidéo"
 a python3 || brew install python
-a git || brew install git
+# /usr/bin/git existe même sans les outils Apple (il ouvre seulement une fenêtre) : on teste qu'il répond vraiment.
+git --version >/dev/null 2>&1 || brew install git
+# Installé depuis l'archive zip (Mac sans git) : ~/.editeur devient un vrai clone, pour les mises à jour.
+[[ -d "$RACINE/.git" ]] || bash "$RACINE/scripts/maj.sh" --depot
 # Le ffmpeg « normal » de Homebrew n'a plus les sous-titres (libass) : il faut ffmpeg-full.
 ff_ok() { for f in /opt/homebrew/opt/ffmpeg-full/bin/ffmpeg /usr/local/opt/ffmpeg-full/bin/ffmpeg "$(command -v ffmpeg)" "$HOME/.local/bin/ffmpeg"; do
   [[ -x "$f" ]] && "$f" -hide_banner -filters 2>/dev/null | grep -q " subtitles " && "$f" -hide_banner -filters 2>/dev/null | grep -q " zscale " && return 0; done; return 1; }

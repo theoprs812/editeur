@@ -12,7 +12,9 @@ meilleure prise gardée, texte du début, sous-titres animés, b-roll trié et p
 
 Le tuto illustré : https://claude.ai/artifact/LbXK1cjS4NzKGnnaZbBv2v (source : `tuto/index.html`). En bref, dans l'onglet Code de l'app Claude, colle :
 
-> Installe le Studio Project Orange. 1. Télécharge https://github.com/theoprs812/editeur dans le dossier ~/.editeur (git clone). 2. Lance : bash ~/.editeur/scripts/installer.sh 3. Suis ce qu'il affiche.
+> Installe le Studio Project Orange. 1. Télécharge https://github.com/theoprs812/editeur dans le dossier ~/.editeur (git clone ; sans git, l'archive https://github.com/theoprs812/editeur/archive/refs/heads/main.zip). 2. Lance : bash ~/.editeur/scripts/installer.sh 3. Suis ce qu'il affiche.
+
+Le message complet (Mac et Windows) est dans `tuto/index.html` (`const PROMPTS`). Installé depuis l'archive, `~/.editeur` devient un vrai clone git dès que git est là (`scripts/maj.sh --depot`, lancé par l'installation et à chaque mise à jour).
 
 Puis rouvre Claude dans le dossier `~/Editeur` et écris « salut le studio ».
 
