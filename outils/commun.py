@@ -2,6 +2,13 @@
 import json, os, platform, shutil, subprocess, sys
 from pathlib import Path
 
+# Windows : la console n'est pas toujours en UTF-8 ; un « ✓ » ne doit jamais faire planter un outil.
+for _flux in (sys.stdout, sys.stderr):
+    try:
+        _flux.reconfigure(errors="replace")
+    except (AttributeError, ValueError):
+        pass
+
 EDITEUR = Path(__file__).resolve().parent.parent
 POLICES = EDITEUR / "polices"
 DA_DEFAUT = EDITEUR / "skills" / "ma-da" / "defaut.json"

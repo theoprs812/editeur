@@ -19,31 +19,43 @@ TONEMAP = "zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable
 
 # ---------- étape 1 : les plans ----------
 
-def clip_plan(projet, p, cache):
+def clip_plan(projet, p, cache, taille=None, rapide=False):
+    """Un plan en petit clip propre. rapide=True : version légère pour l'aperçu du Studio (taille réduite,
+    encodage ultrafast), tirée du clip final s'il est déjà en cache (bien plus rapide à lire qu'un rush 4K)."""
+    w, h = taille or (W, H)
     src = chemin(projet, p["source"]).resolve()
     info = sonde(src)
     dur = round((p["fin"] - p["debut"]) * FPS) / FPS
     if dur <= 0:
         raise ValueError(f"Plan vide : {p}")
     avec_son = p.get("son", True) and info["son"]
-    cle = hashlib.md5(json.dumps([str(src), src.stat().st_mtime, p["debut"], dur, avec_son, W, H, 4]).encode()).hexdigest()[:12]
-    out = cache / f"{src.stem}-{cle}.mkv"
+    def nom(w_, h_, rap):
+        cle = hashlib.md5(json.dumps([str(src), src.stat().st_mtime, p["debut"], dur, avec_son, w_, h_, 4] + (["rapide"] if rap else [])).encode()).hexdigest()[:12]
+        return cache / f"{'apercu-' if rap else ''}{src.stem}-{cle}.mkv"
+    out = nom(w, h, rapide)
     if out.exists():
         return out, dur
+    debut = p["debut"]
+    if rapide and nom(W, H, False).exists():   # le clip final existe : on le réduit
+        src, debut = nom(W, H, False), 0.0
+        info = {"video": True, "son": True, "hdr": False}
     cmd = [ffmpeg(), "-y", "-v", "error"]
+    cadre = f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h}"
     if info.get("video") and not info.get("image_fixe"):
-        cmd += ["-ss", f"{p['debut']:.3f}", "-i", str(src)]
+        cmd += ["-ss", f"{debut:.3f}", "-i", str(src)]
         # start_time=0 : la première image tombe à 0 comme le son (sinon elle glisse parfois d'une image et le plan
         # dure une image de trop : tout le montage se décale, les sous-titres arrivent en avance sur la voix)
-        vf = (TONEMAP + "," if info.get("hdr") else "") + \
-            f"fps={FPS}:start_time=0,scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1,format=yuv420p"
+        if info.get("hdr") and rapide:   # aperçu : on réduit d'abord, la conversion des couleurs iPhone coûte moins
+            vf = f"fps={FPS}:start_time=0,{cadre},{TONEMAP},setsar=1,format=yuv420p"
+        else:
+            vf = (TONEMAP + "," if info.get("hdr") else "") + f"fps={FPS}:start_time=0,{cadre},setsar=1,format=yuv420p"
         vmap = "0:v:0"
     elif info.get("image_fixe"):
         cmd += ["-loop", "1", "-t", f"{dur:.3f}", "-i", str(src)]
-        vf = f"fps={FPS},scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1,format=yuv420p"
+        vf = f"fps={FPS},{cadre},setsar=1,format=yuv420p"
         vmap = "0:v:0"
     else:  # audio seul (voix off) : fond noir, à couvrir d'incrustations
-        cmd += ["-ss", f"{p['debut']:.3f}", "-i", str(src), "-f", "lavfi", "-i", f"color=c=black:s={W}x{H}:r={FPS}"]
+        cmd += ["-ss", f"{debut:.3f}", "-i", str(src), "-f", "lavfi", "-i", f"color=c=black:s={w}x{h}:r={FPS}"]
         vf, vmap = "format=yuv420p", "1:v:0"
     if avec_son:
         af = f"aresample=48000,aformat=channel_layouts=stereo,apad,atrim=0:{dur:.4f},afade=t=in:d=0.008,afade=t=out:st={max(0, dur - 0.012):.4f}:d=0.012"
@@ -51,32 +63,35 @@ def clip_plan(projet, p, cache):
     else:
         cmd += ["-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo",
                 "-filter_complex", f"[{vmap}]{vf}[v]", "-map", "[v]", "-map", f"{2 if vmap == '1:v:0' else 1}:a"]
-    cmd += ["-frames:v", str(round(dur * FPS)), "-t", f"{dur:.4f}", "-c:v", "libx264", "-preset", "veryfast", "-crf", "14",
+    qualite = ["-preset", "ultrafast", "-crf", "30"] if rapide else ["-preset", "veryfast", "-crf", "14"]
+    cmd += ["-frames:v", str(round(dur * FPS)), "-t", f"{dur:.4f}", "-c:v", "libx264", *qualite,
             "-g", str(FPS), "-c:a", "pcm_s16le", str(out)]
     lancer(cmd)
     return out, dur
 
 
-def clip_incrustation(projet, inc, fen, cache):
+def clip_incrustation(projet, inc, fen, cache, taille=None, rapide=False):
     """Prépare une incrustation vidéo une seule fois, déjà à sa taille finale (plein écran ou fenêtre)."""
+    w, h = taille or (W, H)
     src = chemin(projet, inc["source"]).resolve()
     info = sonde(src)
     d = round(float(inc.get("duree", 1.0)) * FPS) / FPS
     fenetre = inc.get("mode", "plein") == "fenetre"
     L, Hm = fen.get("largeur", 880), fen.get("hauteur_max", 880)
-    cle = hashlib.md5(json.dumps([str(src), src.stat().st_mtime, inc.get("debut_source", 0), d, fenetre, L, Hm, W, H, 2]).encode()).hexdigest()[:12]
-    out = cache / f"inc-{src.stem}-{cle}.mkv"
+    cle = hashlib.md5(json.dumps([str(src), src.stat().st_mtime, inc.get("debut_source", 0), d, fenetre, L, Hm, w, h, 2] + (["rapide"] if rapide else [])).encode()).hexdigest()[:12]
+    out = cache / f"{'apercu-' if rapide else ''}inc-{src.stem}-{cle}.mkv"
     if out.exists():
         return out
     pre = TONEMAP + "," if info.get("hdr") else ""
     taille = f"scale={L}:-2,crop={L}:'min(ih,{Hm})'" if fenetre else \
-        f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H}"
+        f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h}"
     if info.get("image_fixe"):
         entree = ["-loop", "1", "-t", f"{d:.3f}", "-i", str(src)]
     else:
         entree = ["-ss", f"{inc.get('debut_source', 0):.3f}", "-i", str(src)]
+    qualite = ["-preset", "ultrafast", "-crf", "30"] if rapide else ["-preset", "veryfast", "-crf", "14"]
     lancer([ffmpeg(), "-y", "-v", "error", *entree, "-an", "-vf", f"{pre}fps={FPS},{taille},setsar=1,format=yuv420p",
-            "-frames:v", str(round(d * FPS)), "-c:v", "libx264", "-preset", "veryfast", "-crf", "14", str(out)])
+            "-frames:v", str(round(d * FPS)), "-c:v", "libx264", *qualite, str(out)])
     return out
 
 
@@ -317,8 +332,12 @@ def plans_temps(m):
     return out, off
 
 
-def rendre(montage_path, apercu=False, image=None, sans_textes=False, sortie=None):
+def rendre(montage_path, apercu=False, image=None, sans_textes=False, sortie=None, rapide=False, suivi=None):
+    """rapide=True : le fond du Studio (sans textes, 540 px sur le petit côté, encodage ultrafast).
+    suivi : fonction appelée avec l'avancement (« 12/85 », « assemblage »)."""
     montage_path, projet, m, k = preparer(montage_path)
+    if rapide:
+        sans_textes, apercu = True, False
     travail = projet / "travail"
     # cache commun à toutes les vidéos de l'élève : un rush déjà préparé n'est jamais refait
     cache = DOSSIER_ELEVE / ".cache" if DOSSIER_ELEVE.exists() else travail / "cache"
@@ -328,28 +347,39 @@ def rendre(montage_path, apercu=False, image=None, sans_textes=False, sortie=Non
     if m.get("zoom"):
         print("  (les zooms ne sont pas encore gérés dans cette version, ils sont ignorés)")
 
+    e = 540 / min(W, H) if rapide else 1.0
+    pair = lambda v: int(round(v * e / 2)) * 2
+    taille = (pair(W), pair(H)) if rapide else None
+    fen = dict(k["fenetre"])
+    if rapide:   # positions et tailles de la fenêtre ramenées à la petite taille
+        fen = {c: pair(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else v for c, v in fen.items()}
     plans_t, liste, off = [], [], 0.0
     for i, p in enumerate(m["plans"]):
-        clip, dur = clip_plan(projet, p, cache)
+        clip, dur = clip_plan(projet, p, cache, taille, rapide)
         plans_t.append((p, off, dur))
         liste += [f"file '{clip.as_posix()}'", f"duration {dur:.6f}"]   # durée exacte : pas d'arrondi qui s'additionne
         off += dur
         print(f"\r  plans prêts : {i + 1}/{len(m['plans'])}", end="", flush=True)
+        if suivi:
+            suivi(f"{i + 1}/{len(m['plans'])}")
     print()
+    if suivi:
+        suivi("assemblage")
     total = off
-    concat = travail / "concat.txt"
+    concat = travail / ("concat-apercu.txt" if rapide else "concat.txt")   # le fond du Studio peut tourner pendant un vrai rendu
     concat.write_text("\n".join(liste) + "\n", encoding="utf-8")
-    ass = travail / "textes.ass"
-    polices_ok(k, dossier_polices(travail, k))
-    hook_img = None if sans_textes else preparer_hook(m, k, travail)
-    ecrire_ass(projet, m, k, plans_t, total, ass, hook_image=bool(hook_img))
+    hook_img = None
+    if not rapide:
+        ass = travail / "textes.ass"
+        polices_ok(k, dossier_polices(travail, k))
+        hook_img = None if sans_textes else preparer_hook(m, k, travail)
+        ecrire_ass(projet, m, k, plans_t, total, ass, hook_image=bool(hook_img))
 
     cmd = [ffmpeg(), "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", str(concat)]
     filt, vlab, n_in = [], "[0:v]", 1
-    fen = k["fenetre"]
     for j, inc in enumerate(m.get("incrustations", [])):
         a, d = float(inc["a"]), float(inc.get("duree", 1.0))
-        cmd += ["-i", str(clip_incrustation(projet, inc, fen, cache))]
+        cmd += ["-i", str(clip_incrustation(projet, inc, fen, cache, taille, rapide))]
         pre = ""
         if inc.get("mode", "plein") == "fenetre":
             L, R = fen.get("largeur", 880), fen.get("arrondi", 40)
@@ -358,7 +388,7 @@ def rendre(montage_path, apercu=False, image=None, sans_textes=False, sortie=Non
             filt.append(f"[{n_in}:v]format=rgba,{coin},"
                         f"fade=t=in:st=0:d=0.12:alpha=1,setpts=PTS-STARTPTS+{a}/TB[i{j}]")
             px = fen["x"] if "x" in fen else "(W-w)/2"
-            pos = f"x={px}:y='{fen.get('y', 260)}+40*max(0,1-(t-{a})/0.15)'"
+            pos = f"x={px}:y='{fen.get('y', pair(260))}+{pair(40)}*max(0,1-(t-{a})/0.15)'"
         else:
             filt.append(f"[{n_in}:v]setpts=PTS-STARTPTS+{a}/TB[i{j}]")
             pos = "x=0:y=0"
@@ -381,7 +411,16 @@ def rendre(montage_path, apercu=False, image=None, sans_textes=False, sortie=Non
     filt.append(f"{vlab}{fin_v},format=yuv420p[vout]")
 
     mu = m.get("musique") if image is None else None
-    if mu and mu.get("source"):
+    if rapide:   # l'aperçu du Studio : loudnorm coûterait plus que toute l'image, un simple gain suffit pour régler les textes
+        if mu and mu.get("source"):
+            cmd += ["-stream_loop", "-1", "-ss", f"{mu.get('debut', 0):.3f}", "-i", str(chemin(projet, mu["source"]).resolve())]
+            niveau = min(0.0, float(mu.get("niveau_db", k["musique"]["niveau_db"])))
+            filt.append(f"[{n_in}:a]aresample=48000,aformat=channel_layouts=stereo,atrim=0:{total:.3f},volume={niveau - 4:.1f}dB[mus]")
+            filt.append("[0:a][mus]amix=inputs=2:duration=first:normalize=0[mix]")
+            filt.append(f"[mix]atrim=0:{total:.4f}[aout]")
+        else:
+            filt.append(f"[0:a]atrim=0:{total:.4f}[aout]")
+    elif mu and mu.get("source"):
         cmd += ["-stream_loop", "-1", "-ss", f"{mu.get('debut', 0):.3f}", "-i", str(chemin(projet, mu["source"]).resolve())]
         niveau = float(mu.get("niveau_db", k["musique"]["niveau_db"]))   # en LU sous la voix (0 = musique au premier plan)
         fin_f = max(0.0, total - 1.2)
@@ -392,9 +431,10 @@ def rendre(montage_path, apercu=False, image=None, sans_textes=False, sortie=Non
         alab = "[mix]"
     else:
         alab = "[0:a]"
-    # loudnorm garde 3 s en mémoire et, en se vidant à la fin, décale les dernières secondes (jusqu'à ~80 ms de retard
-    # du son sur l'image) : on lui donne 4 s de silence à vider, qu'on recoupe ensuite.
-    filt.append(f"{alab}apad=pad_dur=4,loudnorm=I=-14:TP=-1.5:LRA=11,aresample=48000,atrim=0:{total:.4f}[aout]")
+    if not rapide:
+        # loudnorm garde 3 s en mémoire et, en se vidant à la fin, décale les dernières secondes (jusqu'à ~80 ms de retard
+        # du son sur l'image) : on lui donne 4 s de silence à vider, qu'on recoupe ensuite.
+        filt.append(f"{alab}apad=pad_dur=4,loudnorm=I=-14:TP=-1.5:LRA=11,aresample=48000,atrim=0:{total:.4f}[aout]")
 
     if image is not None:
         out = travail / "images" / f"image-{float(image):06.2f}.png"
@@ -408,8 +448,9 @@ def rendre(montage_path, apercu=False, image=None, sans_textes=False, sortie=Non
         if sortie_forcee:
             out = Path(sortie_forcee)
         out.parent.mkdir(parents=True, exist_ok=True)
-        enc = ["-c:v", "libx264", "-preset", "ultrafast" if apercu else "medium", "-crf", "26" if apercu else "18",
-               "-r", str(FPS), "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart"]
+        vite = apercu or rapide
+        enc = ["-c:v", "libx264", "-preset", "ultrafast" if vite else "medium", "-crf", "30" if rapide else "26" if apercu else "18",
+               *(["-g", str(FPS)] if rapide else []), "-r", str(FPS), "-c:a", "aac", "-b:a", "128k" if vite else "192k", "-movflags", "+faststart"]
         cmd += ["-filter_complex", ";".join(filt), "-map", "[vout]", "-map", "[aout]", *enc, "-t", f"{total:.3f}", str(out)]
     lancer(cmd)
     print(f"✓ {out}  ({total:.1f} s)")

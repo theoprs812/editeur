@@ -19,7 +19,8 @@ from commun import dossier_projet, DOSSIER_ELEVE, DA_DEFAUT, police_de
 
 ICI = Path(__file__).parent
 
-ETAT = {"fond": "absent", "fabrication": None, "erreur": None, "fichier": None}
+ETAT = {"fond": "absent", "avancement": "", "fabrication": None, "erreur": None, "fichier": None}
+VERSION_FOND = "rapide-540"   # change la clé quand la recette de l'aperçu change
 VERROU = threading.Lock()
 
 
@@ -37,11 +38,13 @@ class Session:
         return json.loads(self.montage.read_text(encoding="utf-8"))
 
     def cle_fond(self, m):
+        """L'empreinte du montage : tant qu'elle ne bouge pas, l'aperçu déjà fabriqué resservira."""
         utile = {k: m.get(k) for k in ("plans", "incrustations", "musique", "format_image")}
-        return hashlib.md5(json.dumps(utile, sort_keys=True).encode()).hexdigest()
+        return hashlib.md5(json.dumps([utile, VERSION_FOND], sort_keys=True).encode()).hexdigest()
 
     def preparer_fond(self):
-        """La vidéo sans aucun texte (demi-taille), sur laquelle le studio dessine les textes en direct."""
+        """La vidéo sans aucun texte, en petit et vite encodée, sur laquelle le studio dessine les textes en direct.
+        Tourne en arrière-plan : la page est déjà ouverte et affiche « aperçu en préparation »."""
         m = self.lire()
         cle = self.cle_fond(m)
         marque = self.travail / "studio-fond.cle"
@@ -51,11 +54,13 @@ class Session:
             return
         ETAT["fond"] = "preparation"
         try:
-            rendu.rendre(self.montage, apercu=True, sans_textes=True, sortie=self.fond)
+            provisoire = self.travail / "studio-fond-en-cours.mp4"
+            rendu.rendre(self.montage, rapide=True, sortie=provisoire, suivi=lambda x: ETAT.update(avancement=x))
+            provisoire.replace(self.fond)
             marque.write_text(cle)
             self.affiche()
             ETAT["fond"] = "pret"
-        except Exception as e:
+        except BaseException as e:   # rendu.py peut aussi sortir par sys.exit
             ETAT["fond"], ETAT["erreur"] = "erreur", str(e)[-800:]
 
     def affiche(self):
@@ -82,7 +87,7 @@ class Session:
             "kit": {s: k.get(s) for s in ("police", "hook", "sous_titres", "textes")},
             "da_nom": k.get("nom", "Template"), "da_fichier": k.get("_fichier"),
             "blocs": [[{"s": round(w["s"], 3), "e": round(w["e"], 3), "w": w["w"]} for w in b] for b in blocs],
-            "polices": polices, "fond": ETAT["fond"], "erreur": ETAT["erreur"],
+            "polices": polices, "fond": ETAT["fond"], "avancement": ETAT["avancement"], "erreur": ETAT["erreur"],
             "sortie": str(sortie), "sortie_existe": sortie.exists(),
             "fabrication": ETAT["fabrication"], "fichier": ETAT["fichier"],
         }
@@ -277,11 +282,12 @@ def main():
         sys.exit(__doc__)
     session = Session(a[0])
     rendu.preparer(session.montage)
-    threading.Thread(target=session.preparer_fond, daemon=True).start()
+    # la page d'abord, l'aperçu ensuite : sur une longue vidéo il prend plusieurs minutes
     port = int(sys.argv[sys.argv.index("--port") + 1]) if "--port" in sys.argv else port_libre()
     srv = ThreadingHTTPServer(("127.0.0.1", port), gestionnaire(session))
     url = f"http://127.0.0.1:{port}/"
     print(f"✓ Studio ouvert : {url}  (Ctrl+C pour fermer)", flush=True)
+    threading.Thread(target=session.preparer_fond, daemon=True).start()
     if "--sans-navigateur" not in sys.argv:
         webbrowser.open(url)
     try:

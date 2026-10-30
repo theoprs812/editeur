@@ -98,7 +98,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <div id="textes"></div>
       </div>
       <div class="safe" id="safe" hidden><i id="s-haut"></i><i id="s-bas"></i><i id="s-droite"></i></div>
-      <div class="attente" id="attente">Je prépare l'aperçu de ta vidéo (environ une minute)…</div>
+      <div class="attente" id="attente">Aperçu en préparation… Tu peux déjà changer le texte du début et les sous-titres à droite.</div>
     </div>
     <div class="lecture">
       <button type="button" id="jouer">▶ Lire</button>
@@ -175,7 +175,11 @@ async function charger() {
     $("attente").hidden = true;
   } else if (E.fond === "erreur") {
     $("attente").textContent = "L'aperçu n'a pas pu être préparé. Dis à Claude : « le studio ne marche pas ».";
-  } else { setTimeout(charger, 2000); }
+  } else {
+    const av = E.avancement === "assemblage" ? "j'assemble les plans" : E.avancement ? "plans prêts : " + E.avancement : "";
+    $("attente").textContent = "Aperçu en préparation" + (av ? " (" + av + ")" : "") + "… Tu peux déjà changer le texte du début et les sous-titres à droite.";
+    setTimeout(charger, 2000);
+  }
   dimensionner(); dessiner(true);
 }
 
@@ -391,7 +395,7 @@ async function suivre() {
   if (j.fabrication === "en cours") return setTimeout(suivre, 1500);
   $("b-fab").disabled = false;
   if (j.fabrication === "fini") {
-    setStatut("Ta vidéo est prête : " + j.fichier.split("/").pop(), "ok");
+    setStatut("Ta vidéo est prête : " + j.fichier.split(/[\\/]/).pop(), "ok");
     const ouvrir = document.createElement("button"); ouvrir.className = "b"; ouvrir.type = "button"; ouvrir.textContent = "Ouvrir le dossier";
     ouvrir.onclick = () => poster("/api/ouvrir", {}); $("statut").append(" ", ouvrir);
   } else setStatut("Ça n'a pas marché. Dis à Claude : « le studio ne marche pas ».", "ko");
